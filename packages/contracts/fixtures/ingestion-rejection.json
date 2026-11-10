@@ -1,0 +1,21 @@
+{
+  "event_id": "00000000-0000-4000-8000-000000000005",
+  "schema_version": "1.0.0",
+  "event_type": "INGESTION_REJECTED",
+  "event_time": "2026-11-08T12:00:00.000Z",
+  "ingested_at": "2026-11-08T12:00:00.000Z",
+  "source": "simulator",
+  "operating_mode": "SYNTHETIC",
+  "simulation_run_id": "00000000-0000-4000-8000-000000000002",
+  "data_product": "flight_updates",
+  "rejected_event_id": null,
+  "payload_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "reason_code": "SCHEMA_VALIDATION_FAILED",
+  "issues": [
+    {
+      "path": "/flight_number",
+      "code": "SCHEMA_VALIDATION",
+      "message": "Invalid flight number."
+    }
+  ]
+}

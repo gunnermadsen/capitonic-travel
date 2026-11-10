@@ -1,0 +1,25 @@
+{
+  "name": "@airline/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "streamhouse": {
+    "kind": "library"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/v1": "./dist/schemas/events.v1.schema.json"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "json-schema-to-typescript": "15.0.4",
+    "prettier": "3.9.10"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "event_id": "00000000-0000-4000-8000-000000000003",
+  "schema_version": "1.0.0",
+  "event_type": "CREATED",
+  "event_time": "2026-11-08T12:00:00.000Z",
+  "ingested_at": "2026-11-08T12:00:00.000Z",
+  "source": "simulator",
+  "operating_mode": "SYNTHETIC",
+  "simulation_run_id": "00000000-0000-4000-8000-000000000002",
+  "itinerary_id": "00000000-0000-4000-8000-000000000020",
+  "connection_id": "00000000-0000-4000-8000-000000000021",
+  "itinerary_revision": 1,
+  "inbound_flight_instance_id": "00000000-0000-4000-8000-000000000010",
+  "outbound_flight_instance_id": "00000000-0000-4000-8000-000000000011",
+  "connection_airport": "JFK",
+  "minimum_transfer_minutes": 45
+}

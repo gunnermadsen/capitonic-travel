@@ -1,0 +1,1244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.airline.local/events/v1",
+  "title": "AirlineEventV1",
+  "description": "Canonical immutable v1 events. See README for ordering and boundary semantics.",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "format": "uuid"
+    },
+    "instant": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 24,
+      "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10,
+      "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "format": "iana-time-zone"
+    },
+    "airport": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3,
+      "pattern": "^[A-Z]{3}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "sourceRevision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "transferMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "policyVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+    },
+    "envelope": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "const": "1.0.0"
+        },
+        "event_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "event_time": {
+          "$ref": "#/$defs/instant"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9._-]*$"
+        },
+        "operating_mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["SYNTHETIC", "PUBLIC"]
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "simulation_run_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      },
+      "required": [
+        "event_id",
+        "schema_version",
+        "event_type",
+        "event_time",
+        "ingested_at",
+        "source",
+        "operating_mode"
+      ]
+    },
+    "flightUpdate": {
+      "title": "FlightUpdateV1",
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/envelope/properties/event_id"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/envelope/properties/schema_version"
+        },
+        "event_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["FLIGHT_UPDATED"]
+        },
+        "event_time": {
+          "$ref": "#/$defs/envelope/properties/event_time"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/envelope/properties/ingested_at"
+        },
+        "source": {
+          "$ref": "#/$defs/envelope/properties/source"
+        },
+        "operating_mode": {
+          "$ref": "#/$defs/envelope/properties/operating_mode"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/envelope/properties/correlation_id"
+        },
+        "simulation_run_id": {
+          "$ref": "#/$defs/envelope/properties/simulation_run_id"
+        },
+        "flight_instance_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "provider_flight_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operating_carrier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3,
+          "pattern": "^(?:[A-Z0-9]{2}|[A-Z]{3})$"
+        },
+        "flight_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5,
+          "pattern": "^[0-9]{1,4}[A-Z]?$"
+        },
+        "service_date": {
+          "$ref": "#/$defs/date"
+        },
+        "origin_timezone": {
+          "$ref": "#/$defs/timezone"
+        },
+        "destination_timezone": {
+          "$ref": "#/$defs/timezone"
+        },
+        "origin": {
+          "$ref": "#/$defs/airport"
+        },
+        "destination": {
+          "$ref": "#/$defs/airport"
+        },
+        "flight_status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "UNKNOWN",
+            "SCHEDULED",
+            "BOARDING",
+            "DELAYED",
+            "DEPARTED",
+            "IN_AIR",
+            "LANDED",
+            "ARRIVED",
+            "CANCELLED",
+            "DIVERTED"
+          ]
+        },
+        "scheduled_gate_arrival_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estimated_gate_arrival_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_gate_arrival_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scheduled_gate_departure_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estimated_gate_departure_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "boarding_cutoff_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_revision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sourceRevision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_updated_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_timestamp_provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["SOURCE_ISSUED", "LOCALLY_OBSERVED"]
+        },
+        "boarding_cutoff_provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["SOURCE_PROVIDED", "INFERRED_POLICY", "UNKNOWN"]
+        },
+        "boarding_cutoff_policy_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/policyVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "event_id",
+        "schema_version",
+        "event_type",
+        "event_time",
+        "ingested_at",
+        "source",
+        "operating_mode",
+        "flight_instance_id",
+        "provider_flight_id",
+        "operating_carrier",
+        "flight_number",
+        "service_date",
+        "origin_timezone",
+        "destination_timezone",
+        "origin",
+        "destination",
+        "flight_status",
+        "scheduled_gate_arrival_at",
+        "estimated_gate_arrival_at",
+        "actual_gate_arrival_at",
+        "scheduled_gate_departure_at",
+        "estimated_gate_departure_at",
+        "boarding_cutoff_at",
+        "source_revision",
+        "source_updated_at",
+        "source_timestamp_provenance",
+        "boarding_cutoff_provenance",
+        "boarding_cutoff_policy_version"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operating_mode": {
+                "const": "SYNTHETIC"
+              }
+            },
+            "required": ["operating_mode"]
+          },
+          "then": {
+            "required": ["simulation_run_id"]
+          },
+          "else": {
+            "not": {
+              "required": ["simulation_run_id"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_timestamp_provenance": {
+                "const": "SOURCE_ISSUED"
+              }
+            },
+            "required": ["source_timestamp_provenance"]
+          },
+          "then": {
+            "properties": {
+              "source_updated_at": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_timestamp_provenance": {
+                "const": "LOCALLY_OBSERVED"
+              }
+            },
+            "required": ["source_timestamp_provenance"]
+          },
+          "then": {
+            "properties": {
+              "source_updated_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "boarding_cutoff_provenance": {
+                "const": "UNKNOWN"
+              }
+            },
+            "required": ["boarding_cutoff_provenance"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at": {
+                "type": "null"
+              },
+              "boarding_cutoff_policy_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "boarding_cutoff_provenance": {
+                "const": "SOURCE_PROVIDED"
+              }
+            },
+            "required": ["boarding_cutoff_provenance"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "boarding_cutoff_policy_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "boarding_cutoff_provenance": {
+                "const": "INFERRED_POLICY"
+              }
+            },
+            "required": ["boarding_cutoff_provenance"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "boarding_cutoff_policy_version": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "itineraryEvent": {
+      "title": "ItineraryEventV1",
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/envelope/properties/event_id"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/envelope/properties/schema_version"
+        },
+        "event_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["CREATED", "UPDATED", "CANCELLED"]
+        },
+        "event_time": {
+          "$ref": "#/$defs/envelope/properties/event_time"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/envelope/properties/ingested_at"
+        },
+        "source": {
+          "$ref": "#/$defs/envelope/properties/source"
+        },
+        "operating_mode": {
+          "$ref": "#/$defs/envelope/properties/operating_mode"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/envelope/properties/correlation_id"
+        },
+        "simulation_run_id": {
+          "$ref": "#/$defs/envelope/properties/simulation_run_id"
+        },
+        "itinerary_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "connection_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "itinerary_revision": {
+          "$ref": "#/$defs/revision"
+        },
+        "inbound_flight_instance_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "outbound_flight_instance_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "connection_airport": {
+          "$ref": "#/$defs/airport"
+        },
+        "minimum_transfer_minutes": {
+          "$ref": "#/$defs/transferMinutes"
+        }
+      },
+      "required": [
+        "event_id",
+        "schema_version",
+        "event_type",
+        "event_time",
+        "ingested_at",
+        "source",
+        "operating_mode",
+        "itinerary_id",
+        "connection_id",
+        "itinerary_revision",
+        "inbound_flight_instance_id",
+        "outbound_flight_instance_id",
+        "connection_airport",
+        "minimum_transfer_minutes"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operating_mode": {
+                "const": "SYNTHETIC"
+              }
+            },
+            "required": ["operating_mode"]
+          },
+          "then": {
+            "required": ["simulation_run_id"]
+          },
+          "else": {
+            "not": {
+              "required": ["simulation_run_id"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "CREATED"
+              }
+            },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "itinerary_revision": {
+                "const": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "UPDATED"
+              }
+            },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "itinerary_revision": {
+                "minimum": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "CANCELLED"
+              }
+            },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "itinerary_revision": {
+                "minimum": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    "connectionAssessment": {
+      "title": "ConnectionAssessmentV1",
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/envelope/properties/event_id"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/envelope/properties/schema_version"
+        },
+        "event_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["CONNECTION_ASSESSED"]
+        },
+        "event_time": {
+          "$ref": "#/$defs/envelope/properties/event_time"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/envelope/properties/ingested_at"
+        },
+        "source": {
+          "$ref": "#/$defs/envelope/properties/source"
+        },
+        "operating_mode": {
+          "$ref": "#/$defs/envelope/properties/operating_mode"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/envelope/properties/correlation_id"
+        },
+        "simulation_run_id": {
+          "$ref": "#/$defs/envelope/properties/simulation_run_id"
+        },
+        "connection_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "itinerary_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["UNKNOWN", "ON_TRACK", "AT_RISK", "DISRUPTED"]
+        },
+        "arrival_at_used": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "arrival_basis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["ACTUAL", "ESTIMATED", "SCHEDULED", "UNKNOWN"]
+        },
+        "boarding_cutoff_at_used": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cutoff_basis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["SOURCE_PROVIDED", "INFERRED_POLICY", "UNKNOWN"]
+        },
+        "cutoff_policy_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/policyVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum_transfer_minutes": {
+          "$ref": "#/$defs/transferMinutes"
+        },
+        "available_transfer_minutes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "TIMING_UNAVAILABLE",
+            "FLIGHT_STATE_UNAVAILABLE",
+            "STALE_FLIGHT_DATA",
+            "CONNECTION_AIRPORT_MISMATCH",
+            "ITINERARY_CANCELLED",
+            "TRANSFER_TIME_SUFFICIENT",
+            "TRANSFER_TIME_INSUFFICIENT",
+            "INBOUND_CANCELLED",
+            "OUTBOUND_CANCELLED",
+            "INBOUND_DIVERTED",
+            "OUTBOUND_DIVERTED"
+          ]
+        },
+        "trigger_event_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "inbound_update_event_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outbound_update_event_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "itinerary_event_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "assessment_policy_version": {
+          "$ref": "#/$defs/policyVersion"
+        }
+      },
+      "required": [
+        "event_id",
+        "schema_version",
+        "event_type",
+        "event_time",
+        "ingested_at",
+        "source",
+        "operating_mode",
+        "connection_id",
+        "itinerary_id",
+        "revision",
+        "status",
+        "arrival_at_used",
+        "arrival_basis",
+        "boarding_cutoff_at_used",
+        "cutoff_basis",
+        "cutoff_policy_version",
+        "minimum_transfer_minutes",
+        "available_transfer_minutes",
+        "reason_code",
+        "trigger_event_id",
+        "inbound_update_event_id",
+        "outbound_update_event_id",
+        "itinerary_event_id",
+        "assessment_policy_version"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operating_mode": {
+                "const": "SYNTHETIC"
+              }
+            },
+            "required": ["operating_mode"]
+          },
+          "then": {
+            "required": ["simulation_run_id"]
+          },
+          "else": {
+            "not": {
+              "required": ["simulation_run_id"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "UNKNOWN"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "TIMING_UNAVAILABLE",
+                  "FLIGHT_STATE_UNAVAILABLE",
+                  "STALE_FLIGHT_DATA",
+                  "CONNECTION_AIRPORT_MISMATCH",
+                  "ITINERARY_CANCELLED"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ON_TRACK"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": ["TRANSFER_TIME_SUFFICIENT"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "AT_RISK"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": ["TRANSFER_TIME_INSUFFICIENT"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "DISRUPTED"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "INBOUND_CANCELLED",
+                  "OUTBOUND_CANCELLED",
+                  "INBOUND_DIVERTED",
+                  "OUTBOUND_DIVERTED"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "arrival_basis": {
+                "const": "ACTUAL"
+              }
+            },
+            "required": ["arrival_basis"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "arrival_basis": {
+                "const": "ESTIMATED"
+              }
+            },
+            "required": ["arrival_basis"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "arrival_basis": {
+                "const": "SCHEDULED"
+              }
+            },
+            "required": ["arrival_basis"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "arrival_basis": {
+                "const": "UNKNOWN"
+              }
+            },
+            "required": ["arrival_basis"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cutoff_basis": {
+                "const": "SOURCE_PROVIDED"
+              }
+            },
+            "required": ["cutoff_basis"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "cutoff_policy_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cutoff_basis": {
+                "const": "INFERRED_POLICY"
+              }
+            },
+            "required": ["cutoff_basis"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "cutoff_policy_version": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cutoff_basis": {
+                "const": "UNKNOWN"
+              }
+            },
+            "required": ["cutoff_basis"]
+          },
+          "then": {
+            "properties": {
+              "boarding_cutoff_at_used": {
+                "type": "null"
+              },
+              "cutoff_policy_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ON_TRACK"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "boarding_cutoff_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "available_transfer_minutes": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "AT_RISK"
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "arrival_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "boarding_cutoff_at_used": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "available_transfer_minutes": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validationIssue": {
+      "title": "ValidationIssue",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256,
+          "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": ["path", "code", "message"],
+      "additionalProperties": false
+    },
+    "ingestionRejection": {
+      "title": "IngestionRejectionV1",
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/envelope/properties/event_id"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/envelope/properties/schema_version"
+        },
+        "event_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": ["INGESTION_REJECTED"]
+        },
+        "event_time": {
+          "$ref": "#/$defs/envelope/properties/event_time"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/envelope/properties/ingested_at"
+        },
+        "source": {
+          "$ref": "#/$defs/envelope/properties/source"
+        },
+        "operating_mode": {
+          "$ref": "#/$defs/envelope/properties/operating_mode"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/envelope/properties/correlation_id"
+        },
+        "simulation_run_id": {
+          "$ref": "#/$defs/envelope/properties/simulation_run_id"
+        },
+        "data_product": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "flight_updates",
+            "itinerary_events",
+            "connection_assessments"
+          ]
+        },
+        "rejected_event_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "NORMALIZATION_FAILED",
+            "SCHEMA_VALIDATION_FAILED",
+            "UNSUPPORTED_SCHEMA_VERSION",
+            "UNSUPPORTED_EVENT_TYPE",
+            "PROVIDER_PAYLOAD_INVALID"
+          ]
+        },
+        "issues": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/validationIssue"
+          }
+        }
+      },
+      "required": [
+        "event_id",
+        "schema_version",
+        "event_type",
+        "event_time",
+        "ingested_at",
+        "source",
+        "operating_mode",
+        "data_product",
+        "rejected_event_id",
+        "payload_sha256",
+        "reason_code",
+        "issues"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operating_mode": {
+                "const": "SYNTHETIC"
+              }
+            },
+            "required": ["operating_mode"]
+          },
+          "then": {
+            "required": ["simulation_run_id"]
+          },
+          "else": {
+            "not": {
+              "required": ["simulation_run_id"]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/flightUpdate"
+    },
+    {
+      "$ref": "#/$defs/itineraryEvent"
+    },
+    {
+      "$ref": "#/$defs/connectionAssessment"
+    },
+    {
+      "$ref": "#/$defs/ingestionRejection"
+    }
+  ]
+}
