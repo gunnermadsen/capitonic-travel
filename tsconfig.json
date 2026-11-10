@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/database-migrations"
+    },
+    {
+      "path": "./packages/kafka-topics"
+    },
+    {
+      "path": "./packages/ingester"
+    }
+  ]
+}

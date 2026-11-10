@@ -1,0 +1,48 @@
+{
+  "name": "airline-streamhouse",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": "22.21.1",
+    "npm": "10.9.4"
+  },
+  "scripts": {
+    "build": "npm run check:contracts && tsc -b && npm run typecheck:bootstrap",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "biome lint packages",
+    "format": "prettier --write package.json package-lock.json tsconfig*.json biome.json .prettierrc.json .github/workflows packages docs/workspace-development.md common/configs/identities docs/identity-operations.md common/configs/kafka/topics",
+    "format:check": "prettier --check package.json package-lock.json tsconfig*.json biome.json .prettierrc.json .github/workflows packages docs/workspace-development.md common/configs/identities docs/identity-operations.md common/configs/kafka/topics",
+    "validate": "npm run build && npm run typecheck && npm ls --all && npm run lint && npm run format:check && npm run test:contracts && npm run test:ingester",
+    "generate:contracts": "node packages/contracts/tooling/generate.ts --write",
+    "check:contracts": "node packages/contracts/tooling/generate.ts",
+    "test:contracts": "node --test packages/contracts/dist/internal/contracts.test.js",
+    "initialize:database": "node packages/database-migrations/dist/main.js",
+    "initialize:kafka": "node packages/kafka-topics/dist/main.js",
+    "typecheck:bootstrap": "tsc -p packages/contracts/tsconfig.tooling.json",
+    "test:ingester": "node --test packages/ingester/dist/products/flight-updates/application/*.test.js packages/ingester/dist/products/flight-updates/adapters/*.test.js packages/ingester/dist/products/aeroapi/application/*.test.js",
+    "ingester:start": "docker compose --env-file .env --env-file .local/secrets/compose.env --profile initialize --profile applications up -d ingester",
+    "ingester:stop": "docker compose --env-file .local/secrets/compose.env stop ingester",
+    "verify:ingester": "node packages/ingester/dist/acceptance.js",
+    "verify:firehose": "node packages/ingester/dist/firehose-acceptance.js",
+    "verify:aeroapi": "node packages/ingester/dist/aeroapi-acceptance.js"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "@biomejs/biome": "2.6.6",
+    "json-schema-to-typescript": "15.0.4",
+    "typeorm": "1.1.1",
+    "@types/node": "22.19.0"
+  },
+  "overrides": {
+    "typeorm": {
+      "yargs": "18.0.0"
+    },
+    "tslib": "2.8.1"
+  }
+}
