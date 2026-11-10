@@ -1,0 +1,16 @@
+{
+  "name": "@airline/kafka-topics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "streamhouse": {
+    "kind": "job"
+  },
+  "exports": {},
+  "dependencies": {
+    "kafkajs": "2.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0"
+  }
+}
