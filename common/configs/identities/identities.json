@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "authorities": [
+    {
+      "name": "flink-internal",
+      "cn": "airline-dev.flink-internal.ca",
+      "days": 1095
+    },
+    {
+      "name": "flink-rest",
+      "cn": "airline-dev.flink-rest.ca",
+      "days": 1095
+    },
+    {
+      "name": "infrastructure",
+      "cn": "airline-dev.infrastructure.ca",
+      "days": 1095
+    },
+    {
+      "name": "kafka",
+      "cn": "airline-dev.kafka.ca",
+      "days": 1095
+    },
+    {
+      "name": "postgres",
+      "cn": "airline-dev.postgres.ca",
+      "days": 1095
+    }
+  ],
+  "identities": [
+    {
+      "name": "connection-api-db",
+      "authority": "postgres",
+      "cn": "airline-dev.connection-api-db",
+      "days": 90,
+      "sans": ["DNS:connection-api"],
+      "usage": ["clientAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "database-migration",
+      "authority": "postgres",
+      "cn": "airline-dev.database-migration",
+      "days": 90,
+      "sans": ["DNS:database-migrations"],
+      "usage": ["clientAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "flink-jobmanager-internal",
+      "authority": "flink-internal",
+      "cn": "airline-dev.flink-jobmanager-internal",
+      "days": 90,
+      "sans": ["DNS:flink-jobmanager"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-jobmanager-rest",
+      "authority": "flink-rest",
+      "cn": "airline-dev.flink-jobmanager-rest",
+      "days": 90,
+      "sans": ["DNS:flink-jobmanager", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-kafka",
+      "authority": "kafka",
+      "cn": "airline-dev.flink-kafka",
+      "days": 90,
+      "sans": [],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-operator",
+      "authority": "flink-rest",
+      "cn": "airline-dev.flink-operator",
+      "days": 90,
+      "sans": ["DNS:flink-sql-client"],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-sql-internal",
+      "authority": "flink-internal",
+      "cn": "airline-dev.flink-sql-internal",
+      "days": 90,
+      "sans": ["DNS:flink-sql-client"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-sql-rest",
+      "authority": "flink-rest",
+      "cn": "airline-dev.flink-sql-rest",
+      "days": 90,
+      "sans": ["DNS:flink-sql-client", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-taskmanager-internal",
+      "authority": "flink-internal",
+      "cn": "airline-dev.flink-taskmanager-internal",
+      "days": 90,
+      "sans": ["DNS:flink-taskmanager"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "flink-taskmanager-rest",
+      "authority": "flink-rest",
+      "cn": "airline-dev.flink-taskmanager-rest",
+      "days": 90,
+      "sans": ["DNS:flink-taskmanager"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "kafka-bootstrap-admin",
+      "authority": "kafka",
+      "cn": "airline-dev.kafka-bootstrap-admin",
+      "days": 90,
+      "sans": ["DNS:kafka-tools"],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "kafka-broker-1",
+      "authority": "kafka",
+      "cn": "airline-dev.kafka-broker-1",
+      "days": 90,
+      "sans": ["DNS:kafka", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "kafka-controller-1",
+      "authority": "kafka",
+      "cn": "airline-dev.kafka-controller-1",
+      "days": 90,
+      "sans": ["DNS:kafka"],
+      "usage": ["serverAuth", "clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "kafka-denied",
+      "authority": "kafka",
+      "cn": "airline-dev.kafka-denied",
+      "days": 90,
+      "sans": ["DNS:kafka-denied"],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "polaris-bootstrap-db",
+      "authority": "postgres",
+      "cn": "airline-dev.polaris-bootstrap-db",
+      "days": 90,
+      "sans": ["DNS:polaris-bootstrap"],
+      "usage": ["clientAuth"],
+      "format": "postgres"
+    },
+    {
+      "name": "polaris-db",
+      "authority": "postgres",
+      "cn": "airline-dev.polaris-db",
+      "days": 90,
+      "sans": ["DNS:polaris"],
+      "usage": ["clientAuth"],
+      "format": "postgres"
+    },
+    {
+      "name": "polaris-server",
+      "authority": "infrastructure",
+      "cn": "airline-dev.polaris-server",
+      "days": 90,
+      "sans": ["DNS:polaris", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "postgres-bootstrap-admin",
+      "authority": "postgres",
+      "cn": "airline-dev.postgres-bootstrap-admin",
+      "days": 90,
+      "sans": ["DNS:postgres-tools"],
+      "usage": ["clientAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "postgres-denied",
+      "authority": "postgres",
+      "cn": "airline-dev.postgres-denied",
+      "days": 90,
+      "sans": ["DNS:postgres-denied"],
+      "usage": ["clientAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "postgres-server",
+      "authority": "postgres",
+      "cn": "airline-dev.postgres-server",
+      "days": 90,
+      "sans": ["DNS:postgres", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "rustfs",
+      "authority": "infrastructure",
+      "cn": "airline-dev.rustfs",
+      "days": 90,
+      "sans": ["DNS:rustfs", "DNS:localhost", "IP:127.0.0.1"],
+      "usage": ["serverAuth"],
+      "format": "pem"
+    },
+    {
+      "name": "kafka-topic-manager",
+      "authority": "kafka",
+      "cn": "airline-dev.kafka-topic-manager",
+      "days": 90,
+      "sans": [],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "ingester",
+      "authority": "kafka",
+      "cn": "airline-dev.ingester",
+      "days": 90,
+      "sans": [],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "itinerary-service",
+      "authority": "kafka",
+      "cn": "airline-dev.itinerary-service",
+      "days": 90,
+      "sans": [],
+      "usage": ["clientAuth"],
+      "format": "java"
+    },
+    {
+      "name": "connection-api",
+      "authority": "kafka",
+      "cn": "airline-dev.connection-api",
+      "days": 90,
+      "sans": [],
+      "usage": ["clientAuth"],
+      "format": "java"
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "recoveryWindowMs": 172800000,
+  "transactionalIdPrefixes": {
+    "flink-kafka": "airline-assessments-"
+  },
+  "topics": [
+    {
+      "name": "flight_updates",
+      "owner": "ingester",
+      "key": "flight_instance_id",
+      "contract": {
+        "version": "1.0.0",
+        "definition": "flightUpdate"
+      },
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000",
+        "retention.bytes": "-1",
+        "min.insync.replicas": "1",
+        "segment.bytes": "67108864"
+      },
+      "producers": ["ingester"],
+      "consumers": [
+        {
+          "identity": "flink-kafka",
+          "group": "airline-assessor"
+        },
+        {
+          "identity": "flink-kafka",
+          "group": "airline-archive-flights"
+        }
+      ]
+    },
+    {
+      "name": "itinerary_events",
+      "owner": "itinerary-service",
+      "key": "connection_id",
+      "contract": {
+        "version": "1.0.0",
+        "definition": "itineraryEvent"
+      },
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000",
+        "retention.bytes": "-1",
+        "min.insync.replicas": "1",
+        "segment.bytes": "67108864"
+      },
+      "producers": ["itinerary-service"],
+      "consumers": [
+        {
+          "identity": "flink-kafka",
+          "group": "airline-assessor"
+        },
+        {
+          "identity": "flink-kafka",
+          "group": "airline-archive-itineraries"
+        }
+      ]
+    },
+    {
+      "name": "connection_assessments",
+      "owner": "flink-jobs",
+      "key": "connection_id",
+      "contract": {
+        "version": "1.0.0",
+        "definition": "connectionAssessment"
+      },
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000",
+        "retention.bytes": "-1",
+        "min.insync.replicas": "1",
+        "segment.bytes": "67108864"
+      },
+      "producers": ["flink-kafka"],
+      "consumers": [
+        {
+          "identity": "connection-api",
+          "group": "airline-connection-api"
+        },
+        {
+          "identity": "flink-kafka",
+          "group": "airline-archive-assessments"
+        }
+      ]
+    },
+    {
+      "name": "ingestion_rejections",
+      "owner": "ingester",
+      "key": "event_id",
+      "contract": {
+        "version": "1.0.0",
+        "definition": "ingestionRejection"
+      },
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000",
+        "retention.bytes": "-1",
+        "min.insync.replicas": "1",
+        "segment.bytes": "67108864"
+      },
+      "producers": ["ingester", "itinerary-service", "connection-api"],
+      "consumers": [
+        {
+          "identity": "flink-kafka",
+          "group": "airline-archive-rejections"
+        }
+      ]
+    }
+  ]
+}

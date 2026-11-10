@@ -1,0 +1,172 @@
+[
+  {
+    "service": "kafka",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "broker.p12": "kafka-broker-1/keystore.p12",
+      "controller.p12": "kafka-controller-1/keystore.p12",
+      "truststore.p12": "kafka-broker-1/truststore.p12"
+    }
+  },
+  {
+    "service": "kafka-tools",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "keystore.p12": "kafka-bootstrap-admin/keystore.p12",
+      "truststore.p12": "kafka-bootstrap-admin/truststore.p12",
+      "denied.p12": "kafka-denied/keystore.p12"
+    }
+  },
+  {
+    "service": "flink-jobmanager",
+    "uid": 9999,
+    "gid": 9999,
+    "files": {
+      "internal.p12": "flink-jobmanager-internal/keystore.p12",
+      "internal-trust.p12": "flink-jobmanager-internal/truststore.p12",
+      "rest.p12": "flink-jobmanager-rest/keystore.p12",
+      "rest-trust.p12": "flink-jobmanager-rest/truststore.p12",
+      "rest.crt": "flink-jobmanager-rest/tls.crt",
+      "rest.key": "flink-jobmanager-rest/tls.key",
+      "rest-ca.crt": "flink-jobmanager-rest/ca.crt",
+      "kafka.p12": "flink-kafka/keystore.p12",
+      "kafka-trust.p12": "flink-kafka/truststore.p12"
+    }
+  },
+  {
+    "service": "flink-taskmanager",
+    "uid": 9999,
+    "gid": 9999,
+    "files": {
+      "internal.p12": "flink-taskmanager-internal/keystore.p12",
+      "internal-trust.p12": "flink-taskmanager-internal/truststore.p12",
+      "rest.p12": "flink-taskmanager-rest/keystore.p12",
+      "rest-trust.p12": "flink-taskmanager-rest/truststore.p12",
+      "rest.crt": "flink-taskmanager-rest/tls.crt",
+      "rest.key": "flink-taskmanager-rest/tls.key",
+      "rest-ca.crt": "flink-taskmanager-rest/ca.crt",
+      "kafka.p12": "flink-kafka/keystore.p12",
+      "kafka-trust.p12": "flink-kafka/truststore.p12"
+    }
+  },
+  {
+    "service": "flink-sql-client",
+    "uid": 9999,
+    "gid": 9999,
+    "files": {
+      "internal.p12": "flink-sql-internal/keystore.p12",
+      "internal-trust.p12": "flink-sql-internal/truststore.p12",
+      "rest.p12": "flink-sql-rest/keystore.p12",
+      "rest-trust.p12": "flink-sql-rest/truststore.p12",
+      "rest.crt": "flink-sql-rest/tls.crt",
+      "rest.key": "flink-sql-rest/tls.key",
+      "rest-ca.crt": "flink-sql-rest/ca.crt",
+      "kafka.p12": "flink-kafka/keystore.p12",
+      "kafka-trust.p12": "flink-kafka/truststore.p12"
+    }
+  },
+  {
+    "service": "postgres",
+    "uid": 70,
+    "gid": 70,
+    "files": {
+      "tls.crt": "postgres-server/tls.crt",
+      "tls.key": "postgres-server/tls.key",
+      "ca.crt": "postgres-server/ca.crt"
+    }
+  },
+  {
+    "service": "polaris",
+    "uid": 10000,
+    "gid": 10001,
+    "files": {
+      "tls.crt": "polaris-server/tls.crt",
+      "tls.key": "polaris-server/tls.key",
+      "https-ca.crt": "polaris-server/ca.crt",
+      "client.p12": "polaris-db/client.p12",
+      "postgres-ca.crt": "polaris-db/ca.crt"
+    }
+  },
+  {
+    "service": "polaris-bootstrap",
+    "uid": 10000,
+    "gid": 10001,
+    "files": {
+      "client.p12": "polaris-bootstrap-db/client.p12",
+      "postgres-ca.crt": "polaris-bootstrap-db/ca.crt"
+    }
+  },
+  {
+    "service": "rustfs",
+    "uid": 10001,
+    "gid": 10001,
+    "files": {
+      "rustfs_cert.pem": "rustfs/tls.crt",
+      "rustfs_key.pem": "rustfs/tls.key",
+      "ca.crt": "rustfs/ca.crt"
+    }
+  },
+  {
+    "service": "kafka-topic-manager",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "tls.crt": "kafka-topic-manager/tls.crt",
+      "tls.key": "kafka-topic-manager/tls.key",
+      "ca.crt": "kafka-topic-manager/ca.crt",
+      "keystore.p12": "kafka-topic-manager/keystore.p12",
+      "truststore.p12": "kafka-topic-manager/truststore.p12"
+    }
+  },
+  {
+    "service": "ingester",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "tls.crt": "ingester/tls.crt",
+      "tls.key": "ingester/tls.key",
+      "ca.crt": "ingester/ca.crt",
+      "keystore.p12": "ingester/keystore.p12",
+      "truststore.p12": "ingester/truststore.p12"
+    }
+  },
+  {
+    "service": "itinerary-service",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "tls.crt": "itinerary-service/tls.crt",
+      "tls.key": "itinerary-service/tls.key",
+      "ca.crt": "itinerary-service/ca.crt",
+      "keystore.p12": "itinerary-service/keystore.p12",
+      "truststore.p12": "itinerary-service/truststore.p12"
+    }
+  },
+  {
+    "service": "connection-api",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "tls.crt": "connection-api/tls.crt",
+      "tls.key": "connection-api/tls.key",
+      "ca.crt": "connection-api/ca.crt",
+      "keystore.p12": "connection-api/keystore.p12",
+      "truststore.p12": "connection-api/truststore.p12",
+      "postgres.crt": "connection-api-db/tls.crt",
+      "postgres.key": "connection-api-db/tls.key",
+      "postgres-ca.crt": "connection-api-db/ca.crt"
+    }
+  },
+  {
+    "service": "database-migrations",
+    "uid": 1000,
+    "gid": 1000,
+    "files": {
+      "tls.crt": "database-migration/tls.crt",
+      "tls.key": "database-migration/tls.key",
+      "ca.crt": "database-migration/ca.crt"
+    }
+  }
+]
