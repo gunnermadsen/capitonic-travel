@@ -1,0 +1,21 @@
+{
+  "name": "@airline/ingester",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "streamhouse": {
+    "kind": "service"
+  },
+  "exports": {},
+  "dependencies": {
+    "@airline/contracts": "0.0.0",
+    "@nestjs/common": "11.2.8",
+    "@nestjs/core": "11.2.8",
+    "kafkajs": "2.2.4",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0"
+  }
+}
