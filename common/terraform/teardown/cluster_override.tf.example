@@ -1,0 +1,6 @@
+# Copy to ../confluent-cluster/teardown_override.tf only after application teardown.
+resource "confluent_kafka_cluster" "flights" {
+  lifecycle {
+    prevent_destroy = false
+  }
+}

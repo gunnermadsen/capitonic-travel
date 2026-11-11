@@ -1,0 +1,11 @@
+# Copy to ../confluent/teardown_override.tf only for reviewed teardown.
+resource "confluent_kafka_topic" "topics" {
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+resource "confluent_service_account" "provisioner" {
+  lifecycle {
+    prevent_destroy = false
+  }
+}
