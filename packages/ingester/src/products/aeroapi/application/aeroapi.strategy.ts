@@ -32,6 +32,7 @@ export class AeroApiStrategy {
     this.state = await this.store.load();
     this.status.mode = 'PUBLIC';
     this.status.product = 'aeroapi';
+    this.status.output = this.config.output;
     this.status.publicFreshnessMs = this.config.intervalMs * 2 + 30000;
     this.status.lastReceivedAt = this.state.lastObservedAt;
     this.status.healthy =
@@ -48,8 +49,6 @@ export class AeroApiStrategy {
   private metrics(): void {
     const s = this.current();
     this.status.requestsUsed = s.requestsUsed;
-    this.status.maxRequests = this.config.maxRequests;
-    this.status.budgetExhausted = s.requestsUsed >= this.config.maxRequests;
     this.status.haltReason = s.haltReason;
     this.status.nextPollAt = new Date(s.nextPollAt).toISOString();
     this.status.pendingEventId = s.pending[0]?.event_id ?? null;
@@ -75,10 +74,12 @@ export class AeroApiStrategy {
             ]
           : s.flights;
       await this.commit({ ...s, flights, pending: s.pending.slice(1) });
-      this.status.published++;
+      if (this.config.output === 'kafka') {
+        this.status.published++;
+        this.status.lastPublishedAt = this.clock().toISOString();
+      } else this.status.validated++;
       if (event.event_type === 'INGESTION_REJECTED') this.status.rejected++;
       this.status.lastEventId = event.event_id;
-      this.status.lastPublishedAt = this.clock().toISOString();
       this.status.lastSourceEventTime = event.event_time;
     }
   }
@@ -89,16 +90,11 @@ export class AeroApiStrategy {
     await this.flush();
     let s = this.current();
     const now = this.clock();
-    if (
-      s.haltReason ||
-      s.requestsUsed >= this.config.maxRequests ||
-      now.getTime() < s.nextPollAt
-    )
-      return;
+    if (s.haltReason || now.getTime() < s.nextPollAt) return;
     const ident =
       this.config.idents[s.requestsUsed % this.config.idents.length];
     if (!ident) throw new Error('No AeroAPI flight configured');
-    // Reserve before network I/O. Crashes and failed HTTP attempts still consume quota.
+    // Reserve before network I/O. Persist the next poll time across crashes and failed HTTP attempts.
     await this.commit({
       ...s,
       requestsUsed: s.requestsUsed + 1,

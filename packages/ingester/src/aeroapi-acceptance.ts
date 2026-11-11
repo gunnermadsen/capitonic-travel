@@ -33,7 +33,18 @@ try {
     eachMessage: async ({ message }) => {
       try {
         assert.ok(message.value);
-        const result = parseEventJson(message.value.toString());
+        const framed = message.value[0] === 0;
+        if (process.env.KAFKA_MODE === 'confluent' && !framed) return;
+        if (framed) {
+          assert.ok(message.value.length > 5);
+          assert.equal(
+            message.value.readUInt32BE(1),
+            Number(process.env.KAFKA_FLIGHT_SCHEMA_ID),
+          );
+        }
+        const result = parseEventJson(
+          (framed ? message.value.subarray(5) : message.value).toString(),
+        );
         assert.ok(result.ok);
         const e = result.value;
         if (
@@ -54,6 +65,7 @@ try {
         console.log(
           JSON.stringify({
             event: 'aeroapi_kafka_acceptance_passed',
+            schemaId: framed ? message.value.readUInt32BE(1) : null,
             eventId: e.event_id,
             flight: e.operating_carrier + e.flight_number,
             serviceDate: e.service_date,

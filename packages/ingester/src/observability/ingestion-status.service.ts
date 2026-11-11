@@ -4,8 +4,8 @@ export class IngestionStatus {
   product = 'flight-updates';
   publicFreshnessMs = 90000;
   requestsUsed = 0;
-  maxRequests = 0;
-  budgetExhausted = false;
+  output: 'kafka' | 'validate' = 'kafka';
+  validated = 0;
   haltReason: string | null = null;
   nextPollAt: string | null = null;
   mode: 'PUBLIC' | 'SYNTHETIC' = 'SYNTHETIC';
@@ -41,8 +41,8 @@ export class IngestionStatus {
       mode: this.mode,
       product: this.product,
       requestsUsed: this.requestsUsed,
-      maxRequests: this.maxRequests,
-      budgetExhausted: this.budgetExhausted,
+      output: this.output,
+      validated: this.validated,
       haltReason: this.haltReason,
       nextPollAt: this.nextPollAt,
       lastReceivedAt: this.lastReceivedAt,

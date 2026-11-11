@@ -1,4 +1,4 @@
-import { open, readFile, rename, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
@@ -21,6 +21,7 @@ export interface AeroApiState {
 export class AeroApiCheckpointStore {
   constructor(private readonly directory: string) {}
   async load(): Promise<AeroApiState> {
+    await mkdir(this.directory, { recursive: true, mode: 0o700 });
     let raw: string;
     try {
       raw = await readFile(join(this.directory, 'aeroapi.json'), 'utf8');

@@ -24,7 +24,7 @@ import { AeroApiWorker } from './application/aeroapi-worker.service.js';
       provide: AEROAPI_CONFIG,
       inject: [INGESTER_CONFIG],
       useFactory: (config: IngesterConfiguration) =>
-        aeroApiConfiguration(process.env, config.stateDirectory),
+        aeroApiConfiguration(process.env, config.stateDirectory, config.output),
     },
     {
       provide: AeroApiAdapter,

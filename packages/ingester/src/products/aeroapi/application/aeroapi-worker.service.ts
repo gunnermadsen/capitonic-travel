@@ -33,7 +33,8 @@ export class AeroApiWorker
           this.logger.log({
             event: 'aeroapi_poll_completed',
             requestsUsed: this.status.requestsUsed,
-            maxRequests: this.status.maxRequests,
+            output: this.status.output,
+            validated: this.status.validated,
             published: this.status.published,
             rejected: this.status.rejected,
           });

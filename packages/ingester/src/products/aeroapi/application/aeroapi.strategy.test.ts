@@ -124,13 +124,12 @@ test('HTTP adapter caps pages, uses exact configured key, never follows next or 
   );
   assert.equal(calls, 2);
 });
-test('durable quota, deduplication, lost-ack replay and changed snapshots', async () => {
+test('durable polling, deduplication, lost-ack replay and changed snapshots', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
   try {
     const config = aeroApiConfiguration(
         {
           FLIGHTAWARE_API_KEY: 'test',
-          AEROAPI_MAX_REQUESTS: '4',
           AEROAPI_FLIGHTS: 'AAL1',
         },
         dir,
@@ -186,13 +185,13 @@ test('durable quota, deduplication, lost-ack replay and changed snapshots', asyn
     await strategy.initialize();
     clock = new Date(clock.getTime() + config.intervalMs);
     await strategy.tick(new AbortController().signal);
-    assert.equal(calls, 4);
-    assert.equal((await store.load()).requestsUsed, 4);
+    assert.equal(calls, 5);
+    assert.equal((await store.load()).requestsUsed, 5);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
-test('HTTP failure spends quota, Retry-After survives restart, authorization errors halt', async () => {
+test('HTTP failure counts attempts, Retry-After survives restart, authorization errors halt', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
   try {
     const config = aeroApiConfiguration({ FLIGHTAWARE_API_KEY: 'test' }, dir),
@@ -301,6 +300,53 @@ test('a reservation saved before a disk error cannot be reused by the running wo
     await strategy.tick(new AbortController().signal);
     assert.equal(calls, 0);
     assert.equal((await store.load()).requestsUsed, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('polling continues beyond the former lifetime cap and respects interval after restart', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'aeroapi-continuous-'));
+  try {
+    const config = aeroApiConfiguration(
+      { FLIGHTAWARE_API_KEY: 'test' },
+      dir,
+      'validate',
+    );
+    const store = new AeroApiCheckpointStore(dir);
+    await store.save({ ...(await store.load()), requestsUsed: 1000 });
+    let clock = now;
+    let calls = 0;
+    const status = new IngestionStatus();
+    const make = () =>
+      new AeroApiStrategy(
+        config,
+        {
+          acquire: async () => {
+            calls++;
+            return [flight];
+          },
+        },
+        store,
+        { publish: async () => {} },
+        status,
+        () => clock,
+      );
+    let strategy = make();
+    await strategy.initialize();
+    await strategy.tick(new AbortController().signal);
+    assert.equal(calls, 1);
+    assert.equal(status.validated, 1);
+    assert.equal(status.published, 0);
+    assert.equal(status.lastPublishedAt, null);
+    strategy = make();
+    await strategy.initialize();
+    await strategy.tick(new AbortController().signal);
+    assert.equal(calls, 1);
+    clock = new Date(now.getTime() + config.intervalMs);
+    await strategy.tick(new AbortController().signal);
+    assert.equal(calls, 2);
+    assert.equal((await store.load()).requestsUsed, 1002);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

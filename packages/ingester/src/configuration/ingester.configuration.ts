@@ -1,7 +1,9 @@
-import { isAbsolute } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 export const INGESTER_CONFIG = Symbol('INGESTER_CONFIG');
 export interface IngesterConfiguration {
   product: 'flight-updates' | 'aeroapi';
+  output: 'kafka' | 'validate';
+  schemaIds: { flight: number; rejection: number } | undefined;
   mode: 'SYNTHETIC' | 'PUBLIC';
   FIREHOSE_USERNAME: string;
   FIREHOSE_API_KEY: string;
@@ -33,6 +35,11 @@ export function configuration(
   const product = env.INGESTER_PRODUCT ?? 'flight-updates';
   if (product !== 'flight-updates' && product !== 'aeroapi')
     throw new Error('Invalid INGESTER_PRODUCT');
+  const output = env.INGESTER_OUTPUT ?? 'kafka';
+  if (output !== 'kafka' && output !== 'validate')
+    throw new Error('Invalid INGESTER_OUTPUT');
+  if (output === 'validate' && product !== 'aeroapi')
+    throw new Error('Validation output currently supports AeroAPI only');
   const mode = env.INGESTER_MODE ?? 'SYNTHETIC';
   if (mode !== 'PUBLIC' && mode !== 'SYNTHETIC')
     throw new Error('Invalid INGESTER_MODE');
@@ -79,13 +86,24 @@ export function configuration(
     throw new Error('Invalid KAFKA_BROKER');
   return Object.freeze({
     product,
+    output,
+    schemaIds:
+      env.KAFKA_MODE === 'confluent' && output === 'kafka'
+        ? {
+            flight: integer('KAFKA_FLIGHT_SCHEMA_ID', 0, 1, 2147483647),
+            rejection: integer('KAFKA_REJECTION_SCHEMA_ID', 0, 1, 2147483647),
+          }
+        : undefined,
     mode,
     FIREHOSE_USERNAME: env.FIREHOSE_USERNAME ?? '',
     FIREHOSE_API_KEY: env.FIREHOSE_API_KEY ?? '',
     firehoseAirports,
     broker,
     identityDirectory,
-    stateDirectory,
+    stateDirectory:
+      output === 'validate'
+        ? join(stateDirectory, 'validation')
+        : stateDirectory,
     runId,
     startAt,
     intervalMs: integer('INGESTER_INTERVAL_MS', 1000, 100, 60000),

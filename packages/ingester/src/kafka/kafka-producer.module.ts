@@ -15,12 +15,15 @@ import { KafkaProducerService } from './kafka-producer.service.js';
       inject: [INGESTER_CONFIG],
       useFactory: async (config: IngesterConfiguration) =>
         new KafkaProducerService(
-          await createKafkaClient({
-            clientId: 'airline-ingester',
-            brokers: [config.broker],
-            identityDirectory: config.identityDirectory,
-            retries: 2,
-          }),
+          config.output === 'validate'
+            ? undefined
+            : await createKafkaClient({
+                clientId: 'airline-ingester',
+                brokers: [config.broker],
+                identityDirectory: config.identityDirectory,
+                retries: 2,
+              }),
+          config.schemaIds,
         ),
     },
   ],

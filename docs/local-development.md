@@ -54,11 +54,12 @@ AeroAPI and Firehose selection remains unchanged: default AeroAPI, or set
 names. Use `docker compose -f docker-compose.local.yml stop` or `docker compose -f docker-compose.confluent.yml stop` to stop that deployment.
 
 
-The same ingester state volume is retained when switching, including AeroAPI's
-request budget and deduplication state. Previously acknowledged events are not
-republished automatically to a new cluster; pending events go to the selected
-cluster. An exhausted AeroAPI budget remains exhausted. Deliberately increase
-`AEROAPI_MAX_REQUESTS` if more calls are wanted; do not delete state to reset it.
+The same ingester state volume is retained when switching, including request counts
+and deduplication state. Previously acknowledged events are not republished to a
+new cluster; pending events go to the selected cluster. AeroAPI polls continuously
+at `AEROAPI_POLL_INTERVAL_MS` (default 300000); there is no lifetime request cap.
+Use `INGESTER_OUTPUT=validate` to validate AeroAPI events without a Kafka connection.
+This uses an isolated validation checkpoint and never marks events as published.
 
 The commands below describe local infrastructure operations and require the
 existing local identity material and `.local/secrets/` files. Cloud mode does not

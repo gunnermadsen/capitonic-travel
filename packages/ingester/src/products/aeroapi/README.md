@@ -24,16 +24,19 @@ identifies the canonical output `flight_updates`.
 - `AEROAPI_FLIGHTS=AAL1,DAL1`: one to four unique ICAO designators.
 - `AEROAPI_POLL_INTERVAL_MS=300000`: one HTTP attempt every five minutes,
   round-robin across designators (ten minutes per flight with two configured).
-- `AEROAPI_MAX_REQUESTS=12`: total lifetime attempts for this checkpoint, including
-  failed requests. No daily or restart reset. Raising this explicitly adds quota;
-  never delete the checkpoint to reset usage or event identity.
+- Polling continues indefinitely. The persisted request count is an observation metric,
+  not a lifetime cap. Stop the container to stop polling.
+- `INGESTER_OUTPUT=validate`: validate normalized events without connecting to Kafka.
+  Logs include event ID, type and schema version. Validation checkpoints are isolated
+  under `/var/lib/ingester/validation`; published counters stay zero. Default output
+  is `kafka`. Changing back to Kafka resumes the separate publishing checkpoint.
 - `GET /flights/{ident}` only, `max_pages=1`, no pagination, no enrichment calls.
   Query window is current time minus 18 hours through plus 6 hours.
 - Fifteen-second HTTP timeout, one MiB response cap; no adapter-level retry.
   Worker retries on the next scheduled attempt, honoring longer `Retry-After`.
   HTTP 401/403 halt durably. Resolve credentials/entitlement before an operator
   clears only `haltReason` in the stopped worker's checkpoint; retain the count.
-- A request limit is not an account billing limit. Account subscription charges
+- Polling frequency is not an account billing limit. Account subscription charges
   and usage outside this process are independent.
 
 ## Identity, recovery and semantics
@@ -56,13 +59,12 @@ rejected instead of overwriting each other. Polling observes snapshots; intermed
 changes between polls and upstream stale snapshots cannot be recovered or ordered
 without provider revision information.
 
-Health metrics expose product, usage, budget exhaustion, halt reason, next poll,
+Health metrics expose product, request count, output, validation count, halt reason, next poll,
 rejections and publication timestamps. A successful empty or unchanged response
 counts as acquisition health, not a newly published flight. Readiness expires after
-two poll intervals plus 30 seconds without a successful response. The process stays
-alive when budget is exhausted and performs no further HTTP calls.
+two poll intervals plus 30 seconds without a successful response.
 
-`npm run test:ingester` covers provider normalization, quota/restart behavior,
+`npm run test:ingester` covers provider normalization, polling/restart behavior,
 Retry-After, authorization halt, contract validation and Kafka acknowledgement
 replay. `npm run verify:aeroapi` consumes recent current-date AeroAPI records from
 Kafka without calling FlightAware or committing offsets. The acceptance consumer

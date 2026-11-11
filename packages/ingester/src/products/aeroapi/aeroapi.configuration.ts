@@ -2,13 +2,14 @@ export interface AeroApiConfiguration {
   FLIGHTAWARE_API_KEY: string;
   idents: string[];
   intervalMs: number;
-  maxRequests: number;
+  output: 'kafka' | 'validate';
   stateDirectory: string;
 }
 export const AEROAPI_CONFIG = Symbol('AEROAPI_CONFIG');
 export function aeroApiConfiguration(
   env: NodeJS.ProcessEnv,
   stateDirectory: string,
+  output: 'kafka' | 'validate' = 'kafka',
 ): AeroApiConfiguration {
   if (
     !env.FLIGHTAWARE_API_KEY ||
@@ -45,7 +46,7 @@ export function aeroApiConfiguration(
     FLIGHTAWARE_API_KEY: env.FLIGHTAWARE_API_KEY,
     idents,
     intervalMs: integer('AEROAPI_POLL_INTERVAL_MS', 300000, 60000, 3600000),
-    maxRequests: integer('AEROAPI_MAX_REQUESTS', 12, 1, 1000),
+    output,
     stateDirectory,
   };
 }
