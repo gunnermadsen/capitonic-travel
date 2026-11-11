@@ -4,3 +4,8 @@ node_modules/
 packages/*/dist/
 *.tsbuildinfo
 .env
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+**/teardown_override.tf
