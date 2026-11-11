@@ -5,7 +5,7 @@ import { createKafkaClient } from './kafka/kafka-client.js';
 const startedAt = Date.now();
 const kafka = await createKafkaClient({
   clientId: 'airline-firehose-acceptance',
-  brokers: ['localhost:19092'],
+  brokers: [process.env.KAFKA_BROKER ?? 'localhost:19092'],
   identityDirectory: resolve('.local/identity/flink-kafka'),
 });
 const consumer = kafka.consumer({
@@ -32,7 +32,7 @@ const deadline = setTimeout(() => {
 try {
   await consumer.connect();
   await consumer.subscribe({
-    topics: ['flight_updates', 'ingestion_rejections'],
+    topics: ['flight.updates', 'ingestion.rejections'],
     fromBeginning: true,
   });
   await consumer.run({
@@ -52,7 +52,7 @@ try {
         seen.set(event.event_id, raw);
         if (Date.parse(event.ingested_at) < startedAt) return;
         if (
-          topic === 'flight_updates' &&
+          topic === 'flight.updates' &&
           event.event_type === 'FLIGHT_UPDATED'
         ) {
           assert.equal(message.key?.toString(), event.flight_instance_id);

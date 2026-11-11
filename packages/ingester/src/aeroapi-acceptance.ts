@@ -6,7 +6,7 @@ import { createKafkaClient } from './kafka/kafka-client.js';
 const now = Date.now();
 const kafka = await createKafkaClient({
   clientId: 'airline-aeroapi-acceptance',
-  brokers: ['localhost:19092'],
+  brokers: [process.env.KAFKA_BROKER ?? 'localhost:19092'],
   identityDirectory: resolve('.local/identity/flink-kafka'),
 });
 const consumer = kafka.consumer({
@@ -27,7 +27,7 @@ const deadline = setTimeout(() => {
 }, 60000);
 try {
   await consumer.connect();
-  await consumer.subscribe({ topics: ['flight_updates'], fromBeginning: true });
+  await consumer.subscribe({ topics: ['flight.updates'], fromBeginning: true });
   await consumer.run({
     autoCommit: false,
     eachMessage: async ({ message }) => {

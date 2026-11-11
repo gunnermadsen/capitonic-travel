@@ -14,6 +14,28 @@ const deadline = setTimeout(() => {
 }, 120000);
 
 try {
+  const mode = process.env.KAFKA_MODE ?? 'local';
+  if (mode !== 'local' && mode !== 'confluent')
+    throw new Error('Invalid KAFKA_MODE');
+  if (
+    mode === 'confluent' &&
+    (!process.env.KAFKA_BROKER ||
+      !process.env.CONFLUENT_API_KEY ||
+      !process.env.CONFLUENT_API_SECRET)
+  )
+    throw new Error(
+      'KAFKA_BROKER, CONFLUENT_API_KEY and CONFLUENT_API_SECRET are required',
+    );
+  const sasl: kafkajs.SASLOptions | undefined =
+    mode === 'confluent' &&
+    process.env.CONFLUENT_API_KEY &&
+    process.env.CONFLUENT_API_SECRET
+      ? {
+          mechanism: 'plain',
+          username: process.env.CONFLUENT_API_KEY,
+          password: process.env.CONFLUENT_API_SECRET,
+        }
+      : undefined;
   const manifest: unknown = JSON.parse(
     await readFile(
       process.env.TOPIC_MANIFEST ??
@@ -47,24 +69,36 @@ try {
     return {
       topic: entry.name,
       numPartitions: entry.partitions,
-      replicationFactor: entry.replicationFactor,
-      configEntries: Object.entries(entry.config).map(([name, value]) => {
-        if (typeof value !== 'string')
-          throw new Error('Topic configuration values must be strings');
-        return { name, value };
-      }),
+      replicationFactor: mode === 'confluent' ? 3 : entry.replicationFactor,
+      configEntries: Object.entries(entry.config)
+        .filter(
+          ([name]) =>
+            mode === 'local' ||
+            ['cleanup.policy', 'retention.ms', 'retention.bytes'].includes(
+              name,
+            ),
+        )
+        .map(([name, value]) => {
+          if (typeof value !== 'string')
+            throw new Error('Topic configuration values must be strings');
+          return { name, value };
+        }),
     };
   });
   const directory = process.env.IDENTITY_DIR ?? '/run/identity';
   const kafka = new kafkajs.Kafka({
     clientId: 'airline-topic-management',
     brokers: [process.env.KAFKA_BROKER ?? 'kafka:9092'],
-    ssl: {
-      ca: [await readFile(`${directory}/ca.crt`)],
-      cert: await readFile(`${directory}/tls.crt`),
-      key: await readFile(`${directory}/tls.key`),
-      rejectUnauthorized: true,
-    },
+    ssl:
+      mode === 'confluent'
+        ? true
+        : {
+            ca: [await readFile(`${directory}/ca.crt`)],
+            cert: await readFile(`${directory}/tls.crt`),
+            key: await readFile(`${directory}/tls.key`),
+            rejectUnauthorized: true,
+          },
+    ...(sasl ? { sasl } : {}),
     connectionTimeout: 5000,
     requestTimeout: 10000,
     enforceRequestTimeout: true,
@@ -72,7 +106,33 @@ try {
     logLevel: kafkajs.logLevel.NOTHING,
   });
   admin = kafka.admin();
-  await admin.connect();
+  console.log(
+    JSON.stringify({
+      job: 'kafka-topics',
+      event: 'kafka_connection_check_started',
+      mode,
+    }),
+  );
+  try {
+    await admin.connect();
+    console.log(
+      JSON.stringify({
+        job: 'kafka-topics',
+        event: 'kafka_connection_check_passed',
+        mode,
+      }),
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        job: 'kafka-topics',
+        event: 'kafka_connection_check_failed',
+        mode,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      }),
+    );
+    throw error;
+  }
   const created = await admin.createTopics({
     topics,
     waitForLeaders: true,
@@ -92,6 +152,14 @@ try {
       job: 'kafka-topics',
       event: 'failed',
       message: error instanceof Error ? error.message : 'Unknown failure',
+      details:
+        error instanceof Error &&
+        'errors' in error &&
+        Array.isArray(error.errors)
+          ? error.errors.map((item: unknown) =>
+              item instanceof Error ? item.message : 'Unknown broker error',
+            )
+          : undefined,
     }),
   );
   process.exitCode = 1;

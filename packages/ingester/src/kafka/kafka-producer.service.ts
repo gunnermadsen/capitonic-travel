@@ -1,11 +1,19 @@
-import { Injectable, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  type OnModuleInit,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
 import type { Kafka, Producer } from 'kafkajs';
 import { parseEvent } from '@airline/contracts';
 import type { FlightUpdateV1, IngestionRejectionV1 } from '@airline/contracts';
 @Injectable()
-export class KafkaProducerService implements OnApplicationShutdown {
+export class KafkaProducerService
+  implements OnModuleInit, OnApplicationShutdown
+{
   private readonly producer: Producer;
   private connected = false;
+  private readonly logger = new Logger(KafkaProducerService.name);
   constructor(client: Kafka) {
     this.producer = client.producer({
       allowAutoTopicCreation: false,
@@ -13,6 +21,23 @@ export class KafkaProducerService implements OnApplicationShutdown {
       maxInFlightRequests: 1,
       retry: { retries: 2, initialRetryTime: 300, maxRetryTime: 1000 },
     });
+  }
+  async onModuleInit(): Promise<void> {
+    const mode = process.env.KAFKA_MODE ?? 'local';
+    this.logger.log({ event: 'kafka_connection_check_started', mode });
+    try {
+      await this.producer.connect();
+      this.connected = true;
+      this.logger.log({ event: 'kafka_connection_check_passed', mode });
+    } catch (error) {
+      this.logger.error({
+        event: 'kafka_connection_check_failed',
+        mode,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      });
+      await this.producer.disconnect().catch(() => {});
+      throw error;
+    }
   }
   async publish(event: FlightUpdateV1 | IngestionRejectionV1): Promise<void> {
     if (!parseEvent(event).ok)
@@ -25,8 +50,8 @@ export class KafkaProducerService implements OnApplicationShutdown {
       await this.producer.send({
         topic:
           event.event_type === 'FLIGHT_UPDATED'
-            ? 'flight_updates'
-            : 'ingestion_rejections',
+            ? 'flight.updates'
+            : 'ingestion.rejections',
         acks: -1,
         timeout: 10000,
         messages: [

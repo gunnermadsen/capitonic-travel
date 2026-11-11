@@ -6,7 +6,7 @@
   },
   "topics": [
     {
-      "name": "flight_updates",
+      "name": "flight.updates",
       "owner": "ingester",
       "key": "flight_instance_id",
       "contract": {
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "name": "itinerary_events",
+      "name": "itinerary.events",
       "owner": "itinerary-service",
       "key": "connection_id",
       "contract": {
@@ -64,7 +64,7 @@
       ]
     },
     {
-      "name": "connection_assessments",
+      "name": "connection.assessments",
       "owner": "flink-jobs",
       "key": "connection_id",
       "contract": {
@@ -93,7 +93,7 @@
       ]
     },
     {
-      "name": "ingestion_rejections",
+      "name": "ingestion.rejections",
       "owner": "ingester",
       "key": "event_id",
       "contract": {

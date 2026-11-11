@@ -17,7 +17,7 @@ const runId = randomUUID(),
   payloads = new Map<string, string>();
 const kafka = await createKafkaClient({
   clientId: 'airline-ingester-acceptance',
-  brokers: ['localhost:19092'],
+  brokers: [process.env.KAFKA_BROKER ?? 'localhost:19092'],
   identityDirectory: resolve('.local/identity/flink-kafka'),
 });
 const consumer = kafka.consumer({
@@ -28,7 +28,7 @@ const consumer = kafka.consumer({
 const producer = new KafkaProducerService(
   await createKafkaClient({
     clientId: 'airline-ingester-acceptance-write',
-    brokers: ['localhost:19092'],
+    brokers: [process.env.KAFKA_BROKER ?? 'localhost:19092'],
     identityDirectory: resolve('.local/identity/ingester'),
     retries: 2,
   }),
@@ -47,7 +47,7 @@ const deadline = setTimeout(
 try {
   await consumer.connect();
   await consumer.subscribe({
-    topics: ['flight_updates', 'ingestion_rejections'],
+    topics: ['flight.updates', 'ingestion.rejections'],
     fromBeginning: true,
   });
   await consumer.run({
@@ -59,7 +59,7 @@ try {
           parsed = parseEventJson(raw);
         assert.ok(parsed.ok);
         const event = parsed.value;
-        if (topic === 'flight_updates') {
+        if (topic === 'flight.updates') {
           assert.equal(event.event_type, 'FLIGHT_UPDATED');
           if (event.event_type === 'FLIGHT_UPDATED') {
             assert.equal(message.key?.toString(), event.flight_instance_id);
