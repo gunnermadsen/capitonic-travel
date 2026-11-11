@@ -1,5 +1,69 @@
 # Local infrastructure operations
 
+## Choose local infrastructure or Confluent Cloud
+
+Build once with `npm run build`, then choose one deployment:
+
+```sh
+docker compose -f docker-compose.local.yml up -d
+# or, after filling the Confluent values in .env:
+docker compose -f docker-compose.confluent.yml up -d
+```
+
+Each entrypoint loads the shared application definitions and the selected deployment
+configuration through native Compose `include`. No npm startup command, second
+`-f` flag or `--env-file` argument is needed. Docker Compose 2.20.3 or later is
+required. The local entrypoint loads `.env` and `.local/secrets/compose.env`; the
+cloud entrypoint loads only `.env`.
+
+`compose.yaml` holds shared application definitions; `common/compose/local.yaml`
+and `common/compose/confluent.yaml` contain deployment-specific settings. Use the
+root `docker-compose.*.yml` files as entrypoints. Local startup includes the database
+migration job automatically; diagnostic tools remain opt-in.
+
+When switching deployments, add `--remove-orphans` to the selected `up -d` command
+to stop and remove containers from the previous mode. Plain `up -d` does not remove
+already running services from another file. Both modes share the existing project
+name and persistent volumes. No volumes are deleted and no Kafka history is moved.
+
+For cloud mode, fill these exact names in root `.env`:
+
+- `KAFKA_BROKER`: the cluster bootstrap hostname and port (without `https://`).
+- `CONFLUENT_API_KEY`: a Kafka API key authorized for this cluster.
+- `CONFLUENT_API_SECRET`: its secret.
+
+Cloud Compose runs only the ingester. Provision the four topics and their ACLs
+through [Terraform](../common/terraform/confluent/README.md) before starting it.
+Compose does not execute Terraform or the Kafka topic job in
+cloud mode. The topic job remains part of local startup only.
+
+The cloud application key needs Describe/Write on `flight.updates` and
+`ingestion.rejections`, plus cluster IdempotentWrite. It does not need topic-creation
+permissions. Read-back verification additionally needs Read on `flight.updates` and
+consumer group `airline-archive-flights`. Terraform uses Cloud management credentials to provision a separate
+administrative Kafka key and the restricted application key; see its README for
+the credential setup. TLS verifies public certificate roots; SASL/PLAIN sends
+the application API key and secret over that encrypted connection.
+
+The ingester checks Kafka connectivity at startup, but does not create topics.
+Managed Flink, Schema Registry and Tableflow are not provisioned by Compose.
+
+AeroAPI and Firehose selection remains unchanged: default AeroAPI, or set
+`INGESTER_PRODUCT=flight-updates` with `INGESTER_MODE=PUBLIC` for Firehose.
+`FLIGHTAWARE_API_KEY`, `FIREHOSE_USERNAME` and `FIREHOSE_API_KEY` retain their exact
+names. Use `docker compose -f docker-compose.local.yml stop` or `docker compose -f docker-compose.confluent.yml stop` to stop that deployment.
+
+
+The same ingester state volume is retained when switching, including AeroAPI's
+request budget and deduplication state. Previously acknowledged events are not
+republished automatically to a new cluster; pending events go to the selected
+cluster. An exhausted AeroAPI budget remains exhausted. Deliberately increase
+`AEROAPI_MAX_REQUESTS` if more calls are wanted; do not delete state to reset it.
+
+The commands below describe local infrastructure operations and require the
+existing local identity material and `.local/secrets/` files. Cloud mode does not
+require those files.
+
 Scope: Kafka, Flink, RustFS, TimescaleDB/Postgres, and Polaris. No application packages, application topics,
 custom initialization jobs or certificate-generation scripts. Database/catalog
 operator steps are in [database-catalog-operations.md](database-catalog-operations.md). The commands below
@@ -156,9 +220,9 @@ docker run --rm --user 0 --entrypoint /bin/bash -v "$PWD/.local/runtime:/runtime
   'chown -R 1000:1000 /runtime/kafka /runtime/kafka-tools
    chown -R 9999:9999 /runtime/flink-jobmanager /runtime/flink-taskmanager /runtime/flink-sql-client
    chown -R 10001:10001 /runtime/rustfs'
-docker compose --env-file .local/secrets/compose.env -f compose.yaml config --quiet
-docker compose --env-file .local/secrets/compose.env -f compose.yaml build flink-jobmanager
-docker compose --env-file .local/secrets/compose.env -f compose.yaml up -d --wait kafka rustfs
+docker compose -f docker-compose.local.yml config --quiet
+docker compose -f docker-compose.local.yml build flink-jobmanager
+docker compose -f docker-compose.local.yml up -d --wait kafka rustfs
 ```
 
 ## Bootstrap authenticated storage with vendor tooling
@@ -199,7 +263,7 @@ curl --fail --silent --show-error --config .local/secrets/s3-admin.curl \
   'https://localhost:19000/rustfs/admin/v3/add-user?accessKey=airline-dev-flink-state'
 .local/downloads/rc admin policy create local flink-state common/configs/rustfs/flink-state-policy.json
 .local/downloads/rc admin policy attach local flink-state --user airline-dev-flink-state
-docker compose --env-file .local/secrets/compose.env -f compose.yaml up -d --wait flink-jobmanager flink-taskmanager
+docker compose -f docker-compose.local.yml up -d --wait flink-jobmanager flink-taskmanager
 ```
 
 The user-creation request follows RustFS CLI 0.1.30's vendor API. curl reads its
@@ -212,8 +276,8 @@ checks use `rc`. Root credentials are never given to Flink.
 After bootstrap, preserve `.local` and all named volumes. Start with:
 
 ```bash
-docker compose --env-file .local/secrets/compose.env -f compose.yaml up -d --wait
-docker compose --env-file .local/secrets/compose.env -f compose.yaml ps
+docker compose -f docker-compose.local.yml up -d --wait
+docker compose -f docker-compose.local.yml ps
 ```
 
 Stop with the same Compose command followed by `down` **without `-v`**.
@@ -240,7 +304,7 @@ Expected: one TaskManager and two total slots. A running container alone does no
 prove TaskManager registration. Run SQL tooling only when needed:
 
 ```bash
-docker compose --env-file .local/secrets/compose.env -f compose.yaml run --rm flink-sql-client
+docker compose -f docker-compose.local.yml run --rm flink-sql-client
 ```
 
 ## Gate verification
@@ -249,7 +313,7 @@ Use a disposable topic such as `smoke_infrastructure`, never business topics. Th
 vendor tools run through the `kafka-tools` profile, with operator identity only:
 
 ```bash
-docker compose --env-file .local/secrets/compose.env -f compose.yaml run --rm kafka-tools -ec '
+docker compose -f docker-compose.local.yml run --rm kafka-tools -ec '
   /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --command-config /run/identity/client.properties --create --topic smoke_infrastructure --partitions 1 --replication-factor 1
   printf "infrastructure-persistence\n" | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --producer.config /run/identity/client.properties --topic smoke_infrastructure
   /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --consumer.config /run/identity/client.properties --topic smoke_infrastructure --from-beginning --max-messages 1 --timeout-ms 10000'
@@ -270,7 +334,7 @@ read of the state object must return 403. Re-read after RustFS recreation.
 Run the bundled Flink example (no authored job code):
 
 ```bash
-docker compose --env-file .local/secrets/compose.env -f compose.yaml exec -T flink-jobmanager \
+docker compose -f docker-compose.local.yml exec -T flink-jobmanager \
   /opt/flink/bin/flink run -d /opt/flink/examples/streaming/StateMachineExample.jar --error-rate 0 --sleep 1000
 ```
 

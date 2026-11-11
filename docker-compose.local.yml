@@ -1,0 +1,10 @@
+name: airline-dev
+
+include:
+  - path:
+      - compose.yaml
+      - common/compose/local.yaml
+    project_directory: .
+    env_file:
+      - .env
+      - .local/secrets/compose.env

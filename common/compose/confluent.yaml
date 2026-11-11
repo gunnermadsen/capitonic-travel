@@ -1,0 +1,9 @@
+# Cloud topics and permissions must be provisioned before application startup.
+# Infrastructure provisioning belongs to Terraform, not this deployment.
+services:
+  ingester:
+    environment:
+      KAFKA_MODE: confluent
+      KAFKA_BROKER: ${KAFKA_BROKER:?Set KAFKA_BROKER in .env}
+      CONFLUENT_API_KEY: ${CONFLUENT_API_KEY:?Set CONFLUENT_API_KEY in .env}
+      CONFLUENT_API_SECRET: ${CONFLUENT_API_SECRET:?Set CONFLUENT_API_SECRET in .env}

@@ -1,0 +1,9 @@
+name: airline-dev
+
+include:
+  - path:
+      - compose.yaml
+      - common/compose/confluent.yaml
+    project_directory: .
+    env_file:
+      - .env

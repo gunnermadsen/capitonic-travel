@@ -7,16 +7,16 @@ Compose default. The existing streaming product is selected with
 `INGESTER_MODE=SYNTHETIC`. Only the selected product starts in each process.
 
 `FLIGHTAWARE_API_KEY` is read under that exact name from root `.env` by
-`npm run ingester:start`. The HTTP `x-apikey` header is AeroAPI's required wire
+`docker compose -f docker-compose.local.yml up -d ingester`. The HTTP `x-apikey` header is AeroAPI's required wire
 protocol; there is no alternate secret configuration name.
 
 The independent provider boundary follows FlightAware's
 [OpenAPI specification](https://www.flightaware.com/commercial/aeroapi/resources/aeroapi-openapi.yml).
 It does not import Firehose implementation code. Both products publish canonical
 `FlightUpdateV1` full snapshots, validated by `@airline/contracts`, to
-`flight_updates`, keyed by `flight_instance_id`. Provider-specific differences
+`flight.updates`, keyed by `flight_instance_id`. Provider-specific differences
 stay inside this product. Invalid, incomplete, out-of-window or ambiguous flights
-produce `IngestionRejectionV1` on `ingestion_rejections`. Its `data_product` field
+produce `IngestionRejectionV1` on `ingestion.rejections`. Its `data_product` field
 identifies the canonical output `flight_updates`.
 
 ## Usage limits

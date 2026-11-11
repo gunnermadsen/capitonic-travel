@@ -195,11 +195,11 @@ Do not disable endpoint identification. Keep existing CA/key material intact.
 | kafka-broker-1 / kafka-controller-1 | Distinct listener identities; Kafka CA, both EKUs; bootstrap superusers limited to infrastructure |
 | kafka-bootstrap-admin | Operator-only Kafka administrator; not mounted into applications |
 | kafka-topic-manager | Later job; manage declared topics/configs/ACLs; ACL administration necessarily has cluster-level privilege |
-| ingester | Write flight_updates and ingestion_rejections only |
-| itinerary-service | Write itinerary_events only |
-| flink-assessor | Read flight_updates/itinerary_events with named group; write connection_assessments with own transactional-ID prefix |
+| ingester | Write flight.updates and ingestion.rejections only |
+| itinerary-service | Write itinerary.events only |
+| flink-assessor | Read flight.updates/itinerary.events with named group; write connection.assessments with own transactional-ID prefix |
 | flink-archiver | Read archival input topics with named groups; separate Kafka identity |
-| connection-api | Read connection_assessments with its own group; no Kafka writes initially |
+| connection-api | Read connection.assessments with its own group; no Kafka writes initially |
 | flink-jobmanager / flink-taskmanager | Distinct internal certificates, restricted internal trust/pinning; no application access to internal keys |
 | flink-operator / flink-sql-client | Flink REST client certificates; treat accepted REST clients as privileged operators |
 | postgres-server | ServerAuth, SAN postgres/localhost/127.0.0.1 |
@@ -333,8 +333,8 @@ state as live state. Missing timing yields UNKNOWN, never fabricated certainty.
 ## 8. Naming and workspace standards
 
 - Compose services/package directories: lowercase kebab-case.
-- Topics: flight_updates, itinerary_events, connection_assessments,
-  ingestion_rejections. Each environment has its own Kafka instance.
+- Topics: flight.updates, itinerary.events, connection.assessments,
+  ingestion.rejections. Each environment has its own Kafka instance.
 - JSON fields, SQL columns/tables: snake_case. JSON Schemas use product name and
   integer major schema version; additive evolution rules are defined in Phase 5.
 - Event types use explicit product/action names; itinerary payload actions remain

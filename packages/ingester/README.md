@@ -1,8 +1,8 @@
 # Flight ingester
 
 A strict TypeScript NestJS worker with separate AeroAPI polling and Firehose streaming data products, plus synthetic flight updates. It publishes full
-snapshots to `flight_updates` and validated, redacted failures to
-`ingestion_rejections`, using its own Kafka mTLS identity and scoped ACLs.
+snapshots to `flight.updates` and validated, redacted failures to
+`ingestion.rejections`, using its own Kafka mTLS identity and scoped ACLs.
 
 ## Organization
 
@@ -42,11 +42,15 @@ identity and the dedicated `airline-dev_ingester-state` Docker volume is writabl
 by it before startup. Only the ingester certificate, key and CA are mounted.
 
 ```sh
-npm run ingester:start
-npm run ingester:stop
+docker compose -f docker-compose.local.yml up -d
+# Or: docker compose -f docker-compose.confluent.yml up -d
+docker compose -f docker-compose.local.yml stop ingester
 ```
 
-Compose starts Kafka and the existing topic job as direct dependencies. It adds no
+The local Compose overlay starts Kafka and the existing topic job as dependencies.
+The Confluent overlay runs only the ingester, using pre-provisioned topics and TLS/SASL credentials
+from `CONFLUENT_API_KEY` and `CONFLUENT_API_SECRET`, connecting to `KAFKA_BROKER`.
+See [deployment commands](../../docs/local-development.md#choose-local-infrastructure-or-confluent-cloud). It adds no
 readiness coordinator. The worker runs read-only except for its state volume and
 `/tmp`; an OS `flock` prevents concurrent writers to the same state. The service
 uses 256 MiB and 0.25 CPU, with a 45-second shutdown grace period.
@@ -140,7 +144,7 @@ availability bounds outage recovery; there is no silent fallback to `live` if
 recovery is refused. Source-issued ordering/corrections cannot be reconstructed
 when the feed does not supply those timestamps; transport order is retained.
 
-Use `INGESTER_PRODUCT=flight-updates INGESTER_MODE=SYNTHETIC npm run ingester:start` to return to the existing
+Use `INGESTER_PRODUCT=flight-updates INGESTER_MODE=SYNTHETIC docker compose -f docker-compose.local.yml up -d ingester` to return to the existing
 simulator run. The Firehose secrets keep the same names in all modes.
 
 Official references: [connection protocol](https://www.flightaware.com/commercial/firehose/documentation/connection),

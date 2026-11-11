@@ -14,7 +14,7 @@ Build from the repository root, then run the existing Compose job:
 
 ```sh
 npm run build
-docker compose --env-file .local/secrets/compose.env run --rm database-migrations
+docker compose -f docker-compose.local.yml run --rm database-migrations
 ```
 
 The job uses the existing migration identity with certificate and hostname

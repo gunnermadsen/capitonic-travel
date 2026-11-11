@@ -80,10 +80,10 @@ PostgreSQL PKCS12 password is protected by file ownership and the read-only moun
 ## Startup and database boundaries
 
 ```bash
-docker compose --env-file .local/secrets/compose.env build postgres flink-jobmanager
-docker compose --env-file .local/secrets/compose.env up -d postgres rustfs kafka
-docker compose --env-file .local/secrets/compose.env run --rm polaris-bootstrap
-docker compose --env-file .local/secrets/compose.env up -d polaris flink-jobmanager flink-taskmanager
+docker compose -f docker-compose.local.yml build postgres flink-jobmanager
+docker compose -f docker-compose.local.yml up -d postgres rustfs kafka
+docker compose -f docker-compose.local.yml run --rm polaris-bootstrap
+docker compose -f docker-compose.local.yml up -d polaris flink-jobmanager flink-taskmanager
 ```
 
 Postgres runs `common/configs/postgres/bootstrap.sql` only on a new data volume.
