@@ -6,7 +6,7 @@ They use the existing state, never a second copy of the managed resources.
 Do not delete state or revoke the bootstrap Cloud credentials before cleanup.
 
 Stop ingestion first. Do not remove Docker volumes: they contain the durable
-AeroAPI request budget and checkpoints.
+AeroAPI request count and checkpoints.
 
 ```sh
 docker compose -f docker-compose.confluent.yml stop ingester
@@ -16,10 +16,15 @@ terraform -chdir=common/terraform/confluent plan -destroy \
 ```
 
 Review the plan. It must delete exactly the managed provisioning account, its
-cluster role, both managed Kafka keys, four topics and seven ACLs (15 resources).
+cluster role, both managed Kafka keys, four topics and seven ACLs, plus the
+Schema Registry key, four subject roles and four registered schema versions
+(24 resources).
 The destroy target includes resources depending on the provisioning account.
 It must NOT delete existing `capitonic-sa` (`sa-v1wnjrz`), the environment, or
-unrelated resources. Its `prevent_destroy` remains enabled. Topic deletion
+the existing Schema Registry, or unrelated resources. The imported account's
+`prevent_destroy` remains enabled. Schema teardown permanently removes the four
+tracked versions; it does not sweep unrelated subjects or unmanaged versions.
+Topic deletion
 permanently deletes their records. Apply only after accepting that data loss:
 
 ```sh
@@ -28,7 +33,8 @@ rm common/terraform/confluent/teardown_override.tf
 ```
 
 Terraform's dependency order retains the administrative key and role until topic
-and ACL deletion finishes. Only after that apply succeeds, destroy the cluster:
+and ACL deletion finishes. Registry credentials and subject roles similarly remain
+until schema deletion finishes. Only after that apply succeeds, destroy the cluster:
 
 ```sh
 cp common/terraform/teardown/cluster_override.tf.example common/terraform/confluent-cluster/teardown_override.tf

@@ -9,3 +9,8 @@ resource "confluent_service_account" "provisioner" {
     prevent_destroy = false
   }
 }
+resource "confluent_schema" "topic_values" {
+  lifecycle {
+    prevent_destroy = false
+  }
+}

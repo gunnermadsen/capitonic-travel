@@ -1,4 +1,4 @@
-# Confluent topics and access policies
+# Confluent topics, schemas and access policies
 
 This configuration manages four topics from the existing
 [`manifest.json`](../../configs/kafka/topics/manifest.json) and seven literal ACLs
@@ -70,7 +70,19 @@ terraform -chdir=common/terraform/confluent plan -target=confluent_api_key.provi
 terraform -chdir=common/terraform/confluent apply credentials.tfplan
 ```
 
-Then provision topics, ACLs and the application key:
+Bootstrap the Schema Registry provisioning key before the full plan as well:
+
+```sh
+terraform -chdir=common/terraform/confluent plan -target=confluent_api_key.schema_registry -out=schemas-credentials.tfplan
+terraform -chdir=common/terraform/confluent apply schemas-credentials.tfplan
+```
+
+This reuses the environment's existing Schema Registry. The provisioning account
+receives `ResourceOwner` only on the four `<topic>-value` subjects. Its generated
+Registry key stays in Terraform state; no new application secrets are needed.
+The bootstrap credential owner must be authorized to assign these subject roles.
+
+Then provision topics, schemas, ACLs and the application key:
 
 ```sh
 terraform -chdir=common/terraform/confluent init
@@ -94,9 +106,33 @@ Compose starts the application only; it does not run Terraform. Local Compose
 continues to use the `kafka-topics` job and local certificate permissions.
 
 After transferring the three application outputs to `.env`, start with
-`docker compose -f docker-compose.confluent.yml up -d`. Set an explicit
-`AEROAPI_MAX_REQUESTS` lifetime cap before starting; existing request counts are
-preserved. A repeated full Terraform plan should report no changes.
+`docker compose -f docker-compose.confluent.yml up -d`. Use `AEROAPI_POLL_INTERVAL_MS` to control continuous polling frequency.
+Existing request counts are preserved as metrics, not limits. Set
+`INGESTER_OUTPUT=validate` to validate without publishing. A repeated full Terraform plan should report no changes.
 
 For ordered cleanup that preserves the pre-existing application account, see
 [teardown](../teardown/README.md).
+
+## Value schemas
+
+`schemas.tf` registers JSON Schema subjects `flight.updates-value`,
+`itinerary.events-value`, `connection.assessments-value`, and
+`ingestion.rejections-value`. The topic manifest selects each definition directly
+from [`packages/contracts`](../../../packages/contracts/src/schemas/events.v1.schema.json),
+including its shared definitions. There is no separate schema copy to maintain.
+Keys remain plain strings. Registered versions are immutable Terraform resources;
+future contract evolution requires explicitly managing a new version rather than
+silently replacing the tracked version.
+
+Copy Terraform outputs `KAFKA_FLIGHT_SCHEMA_ID` and `KAFKA_REJECTION_SCHEMA_ID`
+into the same names in `.env`. Confluent Compose requires these registered,
+immutable version IDs. With `INGESTER_OUTPUT=kafka`, the ingester validates against
+`packages/contracts` and writes the Confluent JSON Schema wire format (zero magic
+byte, four-byte big-endian schema ID, UTF-8 JSON). Local Kafka retains plain JSON.
+Keep the IDs aligned with their registered contract versions after reprovisioning
+or schema changes. Existing plain-JSON records are not rewritten; consumers reading
+older history must account for that format transition.
+
+Application validation, including custom formats and cross-field rules, remains
+in place; this does not enable broker-side validation. `INGESTER_OUTPUT=validate`
+disables publishing. No Schema Registry credentials are passed to the ingester.
