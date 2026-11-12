@@ -28,7 +28,8 @@ Shell interpolation and inline comments are not supported here.
 The provisioning Kafka key is managed in Terraform state and used only by the
 provider. The ingester key is exposed through sensitive outputs named exactly
 `CONFLUENT_API_KEY` and `CONFLUENT_API_SECRET`; copy those into the same names in
-`.env`, along with output `KAFKA_BROKER`. Never put the provisioning key in the
+`.env`. Set output `KAFKA_BROKER` in `common/compose/confluent.yaml`.
+Never put the provisioning key in the
 application environment. State and saved plans contain API secrets: preserve them
 privately, with restricted permissions, outside source control.
 
@@ -105,10 +106,10 @@ Existing matching ACLs can likewise be imported using the provider's
 Compose starts the application only; it does not run Terraform. Local Compose
 continues to use the `kafka-topics` job and local certificate permissions.
 
-After transferring the three application outputs to `.env`, start with
-`docker compose -f docker-compose.confluent.yml up -d`. Use `AEROAPI_POLL_INTERVAL_MS` to control continuous polling frequency.
+After setting the application credentials in `.env` and broker in Cloud Compose, start with
+`docker compose -f docker-compose.confluent.yml up -d`. Set `AEROAPI_POLL_INTERVAL_MS` in `compose.yaml` to control continuous polling frequency.
 Existing request counts are preserved as metrics, not limits. Set
-`INGESTER_OUTPUT=validate` to validate without publishing. A repeated full Terraform plan should report no changes.
+`INGESTER_OUTPUT=validate` in `compose.yaml` to validate without publishing. A repeated full Terraform plan should report no changes.
 
 For ordered cleanup that preserves the pre-existing application account, see
 [teardown](../teardown/README.md).
@@ -125,7 +126,7 @@ future contract evolution requires explicitly managing a new version rather than
 silently replacing the tracked version.
 
 Copy Terraform outputs `KAFKA_FLIGHT_SCHEMA_ID` and `KAFKA_REJECTION_SCHEMA_ID`
-into the same names in `.env`. Confluent Compose requires these registered,
+into the same names in `common/compose/confluent.yaml`. Confluent Compose requires these registered,
 immutable version IDs. With `INGESTER_OUTPUT=kafka`, the ingester validates against
 `packages/contracts` and writes the Confluent JSON Schema wire format (zero magic
 byte, four-byte big-endian schema ID, UTF-8 JSON). Local Kafka retains plain JSON.

@@ -50,8 +50,10 @@ terraform -chdir=common/terraform/confluent-cluster apply cluster-destroy.tfplan
 rm common/terraform/confluent-cluster/teardown_override.tf
 ```
 
-After cleanup, clear `CONFLUENT_API_KEY`, `CONFLUENT_API_SECRET`, and `KAFKA_BROKER`
-in `.env`; retain bootstrap Cloud credentials only if still needed. Securely
+After cleanup, clear `CONFLUENT_API_KEY` and `CONFLUENT_API_SECRET` in `.env`;
+retain bootstrap Cloud credentials only if still needed. Update `KAFKA_BROKER`
+and the schema IDs in `common/compose/confluent.yaml` before starting against a
+reprovisioned cluster. Securely
 remove obsolete saved plan files and protect state backups, which may contain
 revoked secrets. Preserve the current state files for safe subsequent provisioning.
 If cancelling teardown, remove the copied overrides and saved destroy plans.

@@ -6,7 +6,7 @@ Build once with `npm run build`, then choose one deployment:
 
 ```sh
 docker compose -f docker-compose.local.yml up -d
-# or, after filling the Confluent values in .env:
+# or, after setting Confluent credentials and Compose settings:
 docker compose -f docker-compose.confluent.yml up -d
 ```
 
@@ -28,9 +28,14 @@ name and persistent volumes. No volumes are deleted and no Kafka history is move
 
 For cloud mode, fill these exact names in root `.env`:
 
-- `KAFKA_BROKER`: the cluster bootstrap hostname and port (without `https://`).
 - `CONFLUENT_API_KEY`: a Kafka API key authorized for this cluster.
 - `CONFLUENT_API_SECRET`: its secret.
+
+Root `.env` contains sensitive credentials only. Set non-sensitive application
+settings directly in `compose.yaml`: product, mode, airport, polling interval,
+output, and Firehose username/subscription. Set `KAFKA_BROKER` (hostname and port,
+without `https://`), `KAFKA_FLIGHT_SCHEMA_ID`, and `KAFKA_REJECTION_SCHEMA_ID` in
+`common/compose/confluent.yaml` from the corresponding Terraform outputs.
 
 Cloud Compose runs only the ingester. Provision the four topics and their ACLs
 through [Terraform](../common/terraform/confluent/README.md) before starting it.
@@ -48,7 +53,7 @@ the application API key and secret over that encrypted connection.
 The ingester checks Kafka connectivity at startup, but does not create topics.
 Managed Flink, Schema Registry and Tableflow are not provisioned by Compose.
 
-AeroAPI and Firehose selection remains unchanged: default AeroAPI, or set
+AeroAPI and Firehose selection remains unchanged: default AeroAPI, or edit `compose.yaml` to set
 `INGESTER_PRODUCT=flight-updates` with `INGESTER_MODE=PUBLIC` for Firehose.
 `FLIGHTAWARE_API_KEY`, `FIREHOSE_USERNAME` and `FIREHOSE_API_KEY` retain their exact
 names. Use `docker compose -f docker-compose.local.yml stop` or `docker compose -f docker-compose.confluent.yml stop` to stop that deployment.
