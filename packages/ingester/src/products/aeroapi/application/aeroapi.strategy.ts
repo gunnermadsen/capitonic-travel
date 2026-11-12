@@ -91,9 +91,8 @@ export class AeroApiStrategy {
     let s = this.current();
     const now = this.clock();
     if (s.haltReason || now.getTime() < s.nextPollAt) return;
-    const ident =
-      this.config.idents[s.requestsUsed % this.config.idents.length];
-    if (!ident) throw new Error('No AeroAPI flight configured');
+    const schedule =
+      s.requestsUsed % 2 === 0 ? 'scheduled_arrivals' : 'scheduled_departures';
     // Reserve before network I/O. Persist the next poll time across crashes and failed HTTP attempts.
     await this.commit({
       ...s,
@@ -103,7 +102,7 @@ export class AeroApiStrategy {
     s = this.current();
     let rows: unknown[];
     try {
-      rows = await this.source.acquire(ident, now, signal);
+      rows = await this.source.acquire(schedule, now, signal);
     } catch (error) {
       if (error instanceof AeroApiHttpError) {
         await this.commit({

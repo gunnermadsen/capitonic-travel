@@ -21,17 +21,23 @@ identifies the canonical output `flight_updates`.
 
 ## Usage limits
 
-- `AEROAPI_FLIGHTS=AAL1,DAL1`: one to four unique ICAO designators.
+- `AEROAPI_AIRPORT=KJFK`: JFK airport (ICAO code).
 - `AEROAPI_POLL_INTERVAL_MS=300000`: one HTTP attempt every five minutes,
-  round-robin across designators (ten minutes per flight with two configured).
+  alternating scheduled arrivals and departures (each direction every ten minutes).
+  The persisted request count preserves alternation and the next poll time across restarts.
 - Polling continues indefinitely. The persisted request count is an observation metric,
   not a lifetime cap. Stop the container to stop polling.
 - `INGESTER_OUTPUT=validate`: validate normalized events without connecting to Kafka.
   Logs include event ID, type and schema version. Validation checkpoints are isolated
   under `/var/lib/ingester/validation`; published counters stay zero. Default output
   is `kafka`. Changing back to Kafka resumes the separate publishing checkpoint.
-- `GET /flights/{ident}` only, `max_pages=1`, no pagination, no enrichment calls.
-  Query window is current time minus 18 hours through plus 6 hours.
+- `GET /airports/{airport}/flights/scheduled_arrivals` and `scheduled_departures`,
+  `type=Airline`, `max_pages=1`, no pagination or enrichment calls.
+  Query window is current time minus 2 hours through plus 6 hours. AeroAPI filters
+  arrivals by estimated runway arrival and departures by scheduled runway departure.
+  Only the first page (up to 15 flights) is processed; this is not complete airport
+  coverage. Flights can leave the page before their final update. Normalization
+  accepts a current departure or arrival, including long-haul inbound flights.
 - Fifteen-second HTTP timeout, one MiB response cap; no adapter-level retry.
   Worker retries on the next scheduled attempt, honoring longer `Retry-After`.
   HTTP 401/403 halt durably. Resolve credentials/entitlement before an operator

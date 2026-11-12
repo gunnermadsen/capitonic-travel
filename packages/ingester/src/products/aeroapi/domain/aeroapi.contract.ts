@@ -2,16 +2,20 @@
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-export function parseAeroApiResponse(value: unknown): unknown[] {
+export type AeroApiSchedule = 'scheduled_arrivals' | 'scheduled_departures';
+export function parseAeroApiResponse(
+  value: unknown,
+  schedule: AeroApiSchedule,
+): unknown[] {
   if (
     !isRecord(value) ||
-    !Array.isArray(value.flights) ||
-    value.flights.length > 15 ||
+    !Array.isArray(value[schedule]) ||
+    value[schedule].length > 15 ||
     value.num_pages !== 1
   )
     throw new Error('Invalid or oversized AeroAPI response');
   // Deliberately never follow links.next: every request is limited to one result page.
-  return value.flights;
+  return value[schedule];
 }
 export interface AeroApiAirport {
   code_iata: string;

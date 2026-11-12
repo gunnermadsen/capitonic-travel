@@ -1,5 +1,8 @@
 import type { AeroApiConfiguration } from '../aeroapi.configuration.js';
-import { parseAeroApiResponse } from '../domain/aeroapi.contract.js';
+import {
+  parseAeroApiResponse,
+  type AeroApiSchedule,
+} from '../domain/aeroapi.contract.js';
 export class AeroApiHttpError extends Error {
   constructor(
     readonly status: number,
@@ -10,7 +13,11 @@ export class AeroApiHttpError extends Error {
   }
 }
 export interface AeroApiSource {
-  acquire(ident: string, now: Date, signal: AbortSignal): Promise<unknown[]>;
+  acquire(
+    schedule: AeroApiSchedule,
+    now: Date,
+    signal: AbortSignal,
+  ): Promise<unknown[]>;
 }
 export class AeroApiAdapter implements AeroApiSource {
   constructor(
@@ -18,18 +25,18 @@ export class AeroApiAdapter implements AeroApiSource {
     private readonly request: typeof fetch = fetch,
   ) {}
   async acquire(
-    ident: string,
+    schedule: AeroApiSchedule,
     now: Date,
     signal: AbortSignal,
   ): Promise<unknown[]> {
     const url = new URL(
-      `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(ident)}`,
+      `https://aeroapi.flightaware.com/aeroapi/airports/${this.config.airport}/flights/${schedule}`,
     );
-    url.searchParams.set('ident_type', 'designator');
+    url.searchParams.set('type', 'Airline');
     url.searchParams.set('max_pages', '1');
     url.searchParams.set(
       'start',
-      new Date(now.getTime() - 18 * 3600000)
+      new Date(now.getTime() - 2 * 3600000)
         .toISOString()
         .replace(/\.\d{3}Z$/, 'Z'),
     );
@@ -77,6 +84,6 @@ export class AeroApiAdapter implements AeroApiSource {
       await reader.cancel();
     }
     const value: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    return parseAeroApiResponse(value);
+    return parseAeroApiResponse(value, schedule);
   }
 }

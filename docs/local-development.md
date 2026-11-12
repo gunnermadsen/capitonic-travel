@@ -58,6 +58,9 @@ The same ingester state volume is retained when switching, including request cou
 and deduplication state. Previously acknowledged events are not republished to a
 new cluster; pending events go to the selected cluster. AeroAPI polls continuously
 at `AEROAPI_POLL_INTERVAL_MS` (default 300000); there is no lifetime request cap.
+`AEROAPI_AIRPORT=KJFK` selects JFK. Requests alternate scheduled arrivals and
+scheduled departures, one page per request, so each direction refreshes every ten
+minutes. This samples the first page rather than tracking every airport flight.
 Use `INGESTER_OUTPUT=validate` to validate AeroAPI events without a Kafka connection.
 This uses an isolated validation checkpoint and never marks events as published.
 

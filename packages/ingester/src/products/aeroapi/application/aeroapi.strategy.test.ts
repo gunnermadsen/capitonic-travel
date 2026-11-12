@@ -14,6 +14,10 @@ import {
   type AeroApiPublication,
 } from '../adapters/aeroapi-checkpoint.store.js';
 import { normalizeAeroApi } from '../adapters/aeroapi-normalization.js';
+import {
+  parseAeroApiResponse,
+  type AeroApiSchedule,
+} from '../domain/aeroapi.contract.js';
 import { IngestionStatus } from '../../../observability/ingestion-status.service.js';
 import { AeroApiStrategy } from './aeroapi.strategy.js';
 const now = new Date('2026-11-09T01:00:00.000Z');
@@ -51,7 +55,11 @@ test('AeroAPI gate fields, provenance, service date and current-data guard satis
   assert.equal('simulation_run_id' in e, false);
   assert.throws(() =>
     normalizeAeroApi(
-      { ...flight, scheduled_out: '2020-01-01T00:00:00Z' },
+      {
+        ...flight,
+        scheduled_out: '2020-01-01T00:00:00Z',
+        scheduled_in: '2020-01-01T06:00:00Z',
+      },
       now.toISOString(),
       1,
       now,
@@ -91,6 +99,11 @@ test('HTTP adapter caps pages, uses exact configured key, never follows next or 
   const adapter = new AeroApiAdapter(config, async (input, init) => {
     calls++;
     const url = new URL(String(input));
+    assert.equal(
+      url.pathname,
+      `/aeroapi/airports/KJFK/flights/${calls === 1 ? 'scheduled_arrivals' : 'scheduled_departures'}`,
+    );
+    assert.equal(url.searchParams.get('type'), 'Airline');
     assert.equal(url.searchParams.get('max_pages'), '1');
     assert.match(
       url.searchParams.get('start') ?? '',
@@ -103,26 +116,42 @@ test('HTTP adapter caps pages, uses exact configured key, never follows next or 
     assert.equal(new Headers(init?.headers).get('x-apikey'), 'test');
     return new Response(
       JSON.stringify({
-        flights: [flight],
+        [calls === 1 ? 'scheduled_arrivals' : 'scheduled_departures']: [flight],
         num_pages: 1,
         links: { next: '/another-page' },
       }),
     );
   });
   assert.equal(
-    (await adapter.acquire('AAL1', now, new AbortController().signal)).length,
+    (
+      await adapter.acquire(
+        'scheduled_arrivals',
+        now,
+        new AbortController().signal,
+      )
+    ).length,
     1,
   );
-  assert.equal(calls, 1);
+  assert.equal(
+    (
+      await adapter.acquire(
+        'scheduled_departures',
+        now,
+        new AbortController().signal,
+      )
+    ).length,
+    1,
+  );
+  assert.equal(calls, 2);
   const limited = new AeroApiAdapter(config, async () => {
     calls++;
     return new Response('', { status: 429, headers: { 'retry-after': '600' } });
   });
   await assert.rejects(
-    limited.acquire('AAL1', now, new AbortController().signal),
+    limited.acquire('scheduled_arrivals', now, new AbortController().signal),
     (e: unknown) => e instanceof AeroApiHttpError && e.retryAfterMs === 600000,
   );
-  assert.equal(calls, 2);
+  assert.equal(calls, 3);
 });
 test('durable polling, deduplication, lost-ack replay and changed snapshots', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
@@ -130,7 +159,7 @@ test('durable polling, deduplication, lost-ack replay and changed snapshots', as
     const config = aeroApiConfiguration(
         {
           FLIGHTAWARE_API_KEY: 'test',
-          AEROAPI_FLIGHTS: 'AAL1',
+          AEROAPI_AIRPORT: 'KJFK',
         },
         dir,
       ),
@@ -317,12 +346,14 @@ test('polling continues beyond the former lifetime cap and respects interval aft
     await store.save({ ...(await store.load()), requestsUsed: 1000 });
     let clock = now;
     let calls = 0;
+    const schedules: AeroApiSchedule[] = [];
     const status = new IngestionStatus();
     const make = () =>
       new AeroApiStrategy(
         config,
         {
-          acquire: async () => {
+          acquire: async (schedule) => {
+            schedules.push(schedule);
             calls++;
             return [flight];
           },
@@ -346,8 +377,55 @@ test('polling continues beyond the former lifetime cap and respects interval aft
     clock = new Date(now.getTime() + config.intervalMs);
     await strategy.tick(new AbortController().signal);
     assert.equal(calls, 2);
+    assert.deepEqual(schedules, ['scheduled_arrivals', 'scheduled_departures']);
     assert.equal((await store.load()).requestsUsed, 1002);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('airport response boundaries and long-haul arrivals preserve the canonical contract', () => {
+  assert.deepEqual(
+    parseAeroApiResponse(
+      { scheduled_arrivals: [], num_pages: 1 },
+      'scheduled_arrivals',
+    ),
+    [],
+  );
+  assert.throws(() =>
+    parseAeroApiResponse(
+      { flights: [flight], num_pages: 1 },
+      'scheduled_arrivals',
+    ),
+  );
+  assert.throws(() =>
+    parseAeroApiResponse(
+      { scheduled_departures: Array(16).fill(flight), num_pages: 1 },
+      'scheduled_departures',
+    ),
+  );
+  assert.throws(() =>
+    parseAeroApiResponse(
+      { scheduled_arrivals: [flight], num_pages: 2 },
+      'scheduled_arrivals',
+    ),
+  );
+  const event = normalizeAeroApi(
+    {
+      ...flight,
+      scheduled_out: '2026-11-08T05:00:00Z',
+      destination: { code_iata: 'JFK', timezone: 'America/New_York' },
+    },
+    now.toISOString(),
+    1,
+    now,
+  );
+  assert.ok(parseFlightUpdate(event).ok);
+  assert.equal(event.destination, 'JFK');
+  assert.throws(() =>
+    aeroApiConfiguration(
+      { FLIGHTAWARE_API_KEY: 'test', AEROAPI_AIRPORT: '../bad' },
+      '/tmp',
+    ),
+  );
 });

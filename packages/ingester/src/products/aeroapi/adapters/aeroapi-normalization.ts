@@ -24,10 +24,15 @@ export function normalizeAeroApi(
   previous?: FlightUpdateV1,
 ): FlightUpdateV1 {
   const f = parseAeroApiFlight(raw),
-    scheduled = Date.parse(f.scheduled_out);
+    scheduled = Date.parse(f.scheduled_out),
+    arrival = Date.parse(f.estimated_in ?? f.scheduled_in ?? '');
   if (
-    scheduled < now.getTime() - 18 * 3600000 ||
-    scheduled > now.getTime() + 6 * 3600000
+    (scheduled < now.getTime() - 18 * 3600000 ||
+      scheduled > now.getTime() + 6 * 3600000) &&
+    !(
+      arrival >= now.getTime() - 18 * 3600000 &&
+      arrival <= now.getTime() + 6 * 3600000
+    )
   )
     throw new Error('Flight is outside current observation window');
   const parts = new Intl.DateTimeFormat('en-US', {

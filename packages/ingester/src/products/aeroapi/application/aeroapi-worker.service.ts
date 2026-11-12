@@ -32,6 +32,8 @@ export class AeroApiWorker
         if (before !== this.status.requestsUsed)
           this.logger.log({
             event: 'aeroapi_poll_completed',
+            schedule:
+              before % 2 === 0 ? 'scheduled_arrivals' : 'scheduled_departures',
             requestsUsed: this.status.requestsUsed,
             output: this.status.output,
             validated: this.status.validated,

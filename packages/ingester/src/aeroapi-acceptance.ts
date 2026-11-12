@@ -60,7 +60,15 @@ try {
         assert.ok(e.scheduled_gate_departure_at);
         assert.ok(
           Math.abs(Date.parse(e.scheduled_gate_departure_at) - now) <
-            24 * 3600000,
+            24 * 3600000 ||
+            Math.abs(
+              Date.parse(
+                e.estimated_gate_arrival_at ??
+                  e.scheduled_gate_arrival_at ??
+                  '',
+              ) - now,
+            ) <
+              24 * 3600000,
         );
         console.log(
           JSON.stringify({
