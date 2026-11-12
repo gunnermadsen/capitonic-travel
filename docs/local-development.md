@@ -2,16 +2,18 @@
 
 ## Choose local infrastructure or Confluent Cloud
 
-Build once with `npm run build`, then choose one deployment:
+The Confluent deployment builds the ingester inside Docker and automatically
+initializes state-volume ownership. The local infrastructure deployment still
+requires `npm ci` and `npm run build` on the host. Choose one deployment:
 
 ```sh
 docker compose -f docker-compose.local.yml up -d
 # or, after setting Confluent credentials and Compose settings:
-docker compose -f docker-compose.confluent.yml up -d
+docker compose -f docker-compose.confluent.yml up -d --build
 ```
 
 Each root Compose file is self-contained. `docker-compose.confluent.yml` defines
-only the cloud-connected ingester; `docker-compose.local.yml` defines the ingester
+the cloud-connected ingester and a one-time state permission initializer; `docker-compose.local.yml` defines the ingester
 and local infrastructure. Non-sensitive settings are literal values in each file.
 Only credentials are substituted from root `.env`; local services also mount their
 existing identity and secret files. Local startup includes the database migration
@@ -33,7 +35,7 @@ output, and Firehose username/subscription. Set `KAFKA_BROKER` (hostname and por
 without `https://`), `KAFKA_FLIGHT_SCHEMA_ID`, and `KAFKA_REJECTION_SCHEMA_ID` in
 `docker-compose.confluent.yml` from the corresponding Terraform outputs.
 
-Cloud Compose runs only the ingester. Provision the four topics and their ACLs
+Cloud Compose runs the ingester and its state permission initializer. Provision the four topics and their ACLs
 through [Terraform](../common/terraform/confluent/README.md) before starting it.
 Compose does not execute Terraform or the Kafka topic job in
 cloud mode. The topic job remains part of local startup only.

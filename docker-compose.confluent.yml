@@ -1,9 +1,30 @@
 name: airline-dev
 
+x-ingester-image: &ingester-image
+  image: airline-ingester:local
+  build:
+    context: .
+    dockerfile: packages/ingester/Dockerfile
+
 services:
+  ingester-state-init:
+    <<: *ingester-image
+    user: "0:0"
+    entrypoint: [sh, -c]
+    command: ["chown -R 1000:1000 /var/lib/ingester"]
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    security_opt: [no-new-privileges:true]
+    network_mode: none
+    volumes:
+      - ingester-state:/var/lib/ingester
+
   ingester:
-    image: node:22.21.1-bookworm-slim@sha256:25b3eb23a00590b7499f2a2ce939322727fcce1b15fdd69754fcd09536a3ae2c
-    platform: linux/arm64
+    <<: *ingester-image
+    depends_on:
+      ingester-state-init:
+        condition: service_completed_successfully
     user: "1000:1000"
     working_dir: /workspace
     command: [flock, --nonblock, --no-fork, /var/lib/ingester/process.lock, node, packages/ingester/dist/main.js]
@@ -35,9 +56,6 @@ services:
       FIREHOSE_AIRPORTS: "KJFK"
       INGESTER_INTERVAL_MS: '1000'
     volumes:
-      - ./node_modules:/workspace/node_modules:ro
-      - ./packages/ingester:/workspace/packages/ingester:ro
-      - ./packages/contracts:/workspace/packages/contracts:ro
       - ingester-state:/var/lib/ingester
     healthcheck:
       test: [CMD, node, packages/ingester/dist/health/probe.js, ready]

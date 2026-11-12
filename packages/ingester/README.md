@@ -1,5 +1,7 @@
 # Flight ingester
 
+For deployment inside Codex, use the [Codex Compose entrypoint](../../docs/codex-deployment.md).
+
 A strict TypeScript NestJS worker with separate AeroAPI polling and Firehose streaming data products, plus synthetic flight updates. It publishes full
 snapshots to `flight.updates` and validated, redacted failures to
 `ingestion.rejections`, using its own Kafka mTLS identity and scoped ACLs.

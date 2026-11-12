@@ -1,5 +1,9 @@
 # Agent Instructions
 
+## Delivering changes
+
+- Commit and push completed repository changes unless the user explicitly asks to keep them local. Report the remote branch and commit so other computers can retrieve the changes.
+
 ## Secrets
 
 - The root `.env` file is the canonical source of truth for secret names.

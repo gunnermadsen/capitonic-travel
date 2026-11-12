@@ -1,0 +1,26 @@
+services:
+  ingester-state-init:
+    image: airline-ingester:codex
+    build:
+      secrets:
+        - proxy_ca
+  ingester:
+    image: airline-ingester:codex
+    platform: !reset null
+    build:
+      context: .
+      dockerfile: packages/ingester/Dockerfile
+      secrets:
+        - proxy_ca
+    restart: unless-stopped
+    environment:
+      NODE_USE_ENV_PROXY: '1'
+      NODE_EXTRA_CA_CERTS: /run/secrets/proxy_ca
+    secrets:
+      - proxy_ca
+    volumes: !override
+      - ingester-state:/var/lib/ingester
+
+secrets:
+  proxy_ca:
+    file: ${CODEX_PROXY_CERT:?Codex must provide CODEX_PROXY_CERT}

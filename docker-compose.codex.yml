@@ -1,0 +1,7 @@
+name: airline-dev
+
+include:
+  - path:
+      - docker-compose.confluent.yml
+      - common/compose/codex.yaml
+    project_directory: .
