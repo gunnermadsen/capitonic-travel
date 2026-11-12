@@ -1,9 +1,4 @@
 services:
-  ingester-state-init:
-    image: airline-ingester:codex
-    build:
-      secrets:
-        - proxy_ca
   ingester:
     image: airline-ingester:codex
     platform: !reset null

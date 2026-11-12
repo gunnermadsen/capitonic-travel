@@ -1,30 +1,11 @@
 name: airline-dev
 
-x-ingester-image: &ingester-image
-  image: airline-ingester:local
-  build:
-    context: .
-    dockerfile: packages/ingester/Dockerfile
-
 services:
-  ingester-state-init:
-    <<: *ingester-image
-    user: "0:0"
-    entrypoint: [sh, -c]
-    command: ["chown -R 1000:1000 /var/lib/ingester"]
-    read_only: true
-    cap_drop: [ALL]
-    cap_add: [CHOWN, DAC_OVERRIDE]
-    security_opt: [no-new-privileges:true]
-    network_mode: none
-    volumes:
-      - ingester-state:/var/lib/ingester
-
   ingester:
-    <<: *ingester-image
-    depends_on:
-      ingester-state-init:
-        condition: service_completed_successfully
+    image: airline-ingester:local
+    build:
+      context: .
+      dockerfile: packages/ingester/Dockerfile
     user: "1000:1000"
     working_dir: /workspace
     command: [flock, --nonblock, --no-fork, /var/lib/ingester/process.lock, node, packages/ingester/dist/main.js]

@@ -9,7 +9,7 @@ docker compose -f docker-compose.codex.yml logs --tail=50 ingester
 ```
 
 This entrypoint builds contracts and the ingester with Node 22.21.1 inside Docker,
-uses the host's native architecture, and runs the ingester plus a one-time state-volume permission initializer. No host npm install,
+uses the host's native architecture, and runs only the ingester. No host npm install,
 compiled files, or `.env` file is required. Docker supplies its configured proxy
 settings; Compose mounts the Codex proxy CA for both building and running the image.
 The ingester retains checkpoints in `ingester-state`, takes a process lock, reports
