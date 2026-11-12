@@ -74,6 +74,10 @@ those as optional, not invalid dependencies.
 
 ## NestJS application conventions
 
+For the ingester, use one `ProductsModule` and one service file per data product,
+as defined in [agents.md](../agents.md#ingester-data-products). The general layered
+conventions below do not require extra files or per-product modules in the ingester.
+
 Use feature-oriented [Nest modules](https://docs.nestjs.com/modules) with explicit
 imports and deliberately exported providers. `AppModule` composes features;
 controllers and transport handlers validate inputs and delegate orchestration.

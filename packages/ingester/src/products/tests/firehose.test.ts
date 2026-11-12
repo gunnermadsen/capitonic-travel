@@ -1,3 +1,9 @@
+import { IngestionStatus } from '../../observability/ingestion-status.service.js';
+import { configuration } from '../../configuration/ingester.configuration.js';
+import { createFirehoseCheckpointStore } from './helpers.js';
+import type { FirehoseState } from '../flight-updates.service.js';
+import type { Publication } from '../flight-updates.service.js';
+import { createFirehoseFlightUpdatesStrategy } from './helpers.js';
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -5,14 +11,6 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseFlightUpdate } from '@airline/contracts';
-import { IngestionStatus } from '../../../observability/ingestion-status.service.js';
-import { configuration } from '../../../configuration/ingester.configuration.js';
-import {
-  FirehoseCheckpointStore,
-  type FirehoseState,
-} from '../adapters/firehose-checkpoint.store.js';
-import type { Publication } from '../domain/ingestion.ports.js';
-import { FirehoseFlightUpdatesStrategy } from './firehose-flight-updates.strategy.js';
 const base = {
   type: 'flifo',
   pitr: '1794197579',
@@ -54,7 +52,7 @@ class Publisher {
   }
 }
 const strategy = (store: Store, publisher: Publisher) =>
-  new FirehoseFlightUpdatesStrategy(
+  createFirehoseFlightUpdatesStrategy(
     store,
     publisher,
     new IngestionStatus(),
@@ -213,14 +211,14 @@ test('confirmed cancellation, uncancel, runway arrival and gate arrival have dis
 test('public checkpoint survives reconstruction and refuses mismatched subscriptions and corrupt state', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'firehose-checkpoint-'));
   try {
-    const store = new FirehoseCheckpointStore(dir, 'KJFK');
+    const store = createFirehoseCheckpointStore(dir, 'KJFK');
     const state = await store.load();
     await store.save({ ...state, pitr: base.pitr });
     assert.equal(
-      (await new FirehoseCheckpointStore(dir, 'KJFK').load()).pitr,
+      (await createFirehoseCheckpointStore(dir, 'KJFK').load()).pitr,
       base.pitr,
     );
-    await assert.rejects(new FirehoseCheckpointStore(dir, 'KLAX').load());
+    await assert.rejects(createFirehoseCheckpointStore(dir, 'KLAX').load());
     await writeFile(join(dir, 'flight-updates-firehose.json'), '{}');
     await assert.rejects(store.load());
   } finally {

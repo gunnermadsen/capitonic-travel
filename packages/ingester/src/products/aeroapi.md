@@ -1,10 +1,10 @@
 # AeroAPI data product
 
-A separate Nest module, polling worker, strategy, provider contract and checkpoint,
-selected with `INGESTER_PRODUCT=aeroapi` and `INGESTER_MODE=PUBLIC`. This is the
-Compose default. The existing streaming product is selected with
-`INGESTER_PRODUCT=flight-updates` and `INGESTER_MODE=PUBLIC`; its simulator uses
-`INGESTER_MODE=SYNTHETIC`. Only the selected product starts in each process.
+AeroAPI is a source in `FlightUpdatesService`, selected with
+`INGESTER_PRODUCT=aeroapi` and `INGESTER_MODE=PUBLIC` (the Compose default).
+Firehose uses `INGESTER_PRODUCT=flight-updates` with `INGESTER_MODE=PUBLIC`;
+the simulator uses `INGESTER_MODE=SYNTHETIC`. These existing configuration values
+are retained for compatibility. One source starts per process.
 
 `FLIGHTAWARE_API_KEY` is read under that exact name from root `.env` by
 `docker compose -f docker-compose.local.yml up -d ingester`. The HTTP `x-apikey` header is AeroAPI's required wire

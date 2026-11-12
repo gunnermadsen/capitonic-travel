@@ -24,7 +24,7 @@
     "initialize:database": "node packages/database-migrations/dist/main.js",
     "initialize:kafka": "node packages/kafka-topics/dist/main.js",
     "typecheck:bootstrap": "tsc -p packages/contracts/tsconfig.tooling.json",
-    "test:ingester": "node --test packages/ingester/dist/products/flight-updates/application/*.test.js packages/ingester/dist/products/flight-updates/adapters/*.test.js packages/ingester/dist/products/aeroapi/application/*.test.js packages/ingester/dist/kafka/*.test.js",
+    "test:ingester": "node --test packages/ingester/dist/products/tests/*.test.js packages/ingester/dist/kafka/*.test.js",
     "verify:ingester": "node packages/ingester/dist/acceptance.js",
     "verify:firehose": "node packages/ingester/dist/firehose-acceptance.js",
     "verify:aeroapi": "node packages/ingester/dist/aeroapi-acceptance.js"

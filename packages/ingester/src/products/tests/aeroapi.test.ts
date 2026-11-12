@@ -1,25 +1,21 @@
+import { aeroApiConfiguration } from '../flight-updates.service.js';
+import { createAeroApiAdapter } from './helpers.js';
+import { AeroApiHttpError } from '../flight-updates.service.js';
+import { createAeroApiCheckpointStore } from './helpers.js';
+import type { AeroApiPublication } from '../flight-updates.service.js';
+import { normalizeAeroApi } from '../flight-updates.service.js';
+import {
+  parseAeroApiResponse,
+  type AeroApiSchedule,
+} from '../flight-updates.service.js';
+import { IngestionStatus } from '../../observability/ingestion-status.service.js';
+import { createAeroApiStrategy } from './helpers.js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseFlightUpdate } from '@airline/contracts';
-import { aeroApiConfiguration } from '../aeroapi.configuration.js';
-import {
-  AeroApiAdapter,
-  AeroApiHttpError,
-} from '../adapters/aeroapi.adapter.js';
-import {
-  AeroApiCheckpointStore,
-  type AeroApiPublication,
-} from '../adapters/aeroapi-checkpoint.store.js';
-import { normalizeAeroApi } from '../adapters/aeroapi-normalization.js';
-import {
-  parseAeroApiResponse,
-  type AeroApiSchedule,
-} from '../domain/aeroapi.contract.js';
-import { IngestionStatus } from '../../../observability/ingestion-status.service.js';
-import { AeroApiStrategy } from './aeroapi.strategy.js';
 const now = new Date('2026-11-09T01:00:00.000Z');
 const flight = {
   fa_flight_id: 'AAL1-123-airline-1',
@@ -96,7 +92,7 @@ test('AeroAPI gate fields, provenance, service date and current-data guard satis
 test('HTTP adapter caps pages, uses exact configured key, never follows next or retries', async () => {
   const config = aeroApiConfiguration({ FLIGHTAWARE_API_KEY: 'test' }, '/tmp');
   let calls = 0;
-  const adapter = new AeroApiAdapter(config, async (input, init) => {
+  const adapter = createAeroApiAdapter(config, async (input, init) => {
     calls++;
     const url = new URL(String(input));
     assert.equal(
@@ -143,7 +139,7 @@ test('HTTP adapter caps pages, uses exact configured key, never follows next or 
     1,
   );
   assert.equal(calls, 2);
-  const limited = new AeroApiAdapter(config, async () => {
+  const limited = createAeroApiAdapter(config, async () => {
     calls++;
     return new Response('', { status: 429, headers: { 'retry-after': '600' } });
   });
@@ -163,7 +159,7 @@ test('durable polling, deduplication, lost-ack replay and changed snapshots', as
         },
         dir,
       ),
-      store = new AeroApiCheckpointStore(dir);
+      store = createAeroApiCheckpointStore(dir);
     let clock = now,
       calls = 0,
       fail = true;
@@ -182,7 +178,7 @@ test('durable polling, deduplication, lost-ack replay and changed snapshots', as
       },
     };
     const make = () =>
-      new AeroApiStrategy(
+      createAeroApiStrategy(
         config,
         source,
         store,
@@ -224,7 +220,7 @@ test('HTTP failure counts attempts, Retry-After survives restart, authorization 
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
   try {
     const config = aeroApiConfiguration({ FLIGHTAWARE_API_KEY: 'test' }, dir),
-      store = new AeroApiCheckpointStore(dir);
+      store = createAeroApiCheckpointStore(dir);
     let clock = now,
       calls = 0;
     const source = {
@@ -234,7 +230,7 @@ test('HTTP failure counts attempts, Retry-After survives restart, authorization 
       },
     };
     const make = () =>
-      new AeroApiStrategy(
+      createAeroApiStrategy(
         config,
         source,
         store,
@@ -268,9 +264,9 @@ test('ambiguous provider IDs are rejected rather than overwriting flight state',
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
   try {
     const config = aeroApiConfiguration({ FLIGHTAWARE_API_KEY: 'test' }, dir),
-      store = new AeroApiCheckpointStore(dir),
+      store = createAeroApiCheckpointStore(dir),
       events: AeroApiPublication[] = [];
-    const strategy = new AeroApiStrategy(
+    const strategy = createAeroApiStrategy(
       config,
       { acquire: async () => [flight, { ...flight, diverted: true }] },
       store,
@@ -295,22 +291,18 @@ test('ambiguous provider IDs are rejected rather than overwriting flight state',
 test('a reservation saved before a disk error cannot be reused by the running worker', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'aeroapi-test-'));
   try {
-    class FaultStore extends AeroApiCheckpointStore {
-      fail = false;
-      override async save(
-        state: import('../adapters/aeroapi-checkpoint.store.js').AeroApiState,
-      ): Promise<void> {
-        await super.save(state);
-        if (this.fail) {
-          this.fail = false;
-          throw new Error('Directory sync failed');
-        }
-      }
-    }
     const config = aeroApiConfiguration({ FLIGHTAWARE_API_KEY: 'test' }, dir),
-      store = new FaultStore(dir);
+      store = { ...createAeroApiCheckpointStore(dir), fail: false };
+    const save = store.save;
+    store.save = async (state) => {
+      await save(state);
+      if (store.fail) {
+        store.fail = false;
+        throw new Error('Directory sync failed');
+      }
+    };
     let calls = 0;
-    const strategy = new AeroApiStrategy(
+    const strategy = createAeroApiStrategy(
       config,
       {
         acquire: async () => {
@@ -342,14 +334,14 @@ test('polling continues beyond the former lifetime cap and respects interval aft
       dir,
       'validate',
     );
-    const store = new AeroApiCheckpointStore(dir);
+    const store = createAeroApiCheckpointStore(dir);
     await store.save({ ...(await store.load()), requestsUsed: 1000 });
     let clock = now;
     let calls = 0;
     const schedules: AeroApiSchedule[] = [];
     const status = new IngestionStatus();
     const make = () =>
-      new AeroApiStrategy(
+      createAeroApiStrategy(
         config,
         {
           acquire: async (schedule) => {

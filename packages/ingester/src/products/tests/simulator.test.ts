@@ -1,3 +1,15 @@
+import { configuration } from '../../configuration/ingester.configuration.js';
+import { createFileCheckpointStore } from './helpers.js';
+import { IngestionStatus } from '../../observability/ingestion-status.service.js';
+import { createSimulatorAdapter } from './helpers.js';
+import type {
+  CheckpointStore,
+  EventPublisher,
+  FlightProvider,
+  IngestionState,
+  Publication,
+} from '../flight-updates.service.js';
+import { createFlightUpdatesStrategy } from './helpers.js';
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -5,18 +17,6 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseFlightUpdate, parseIngestionRejection } from '@airline/contracts';
-import { configuration } from '../../../configuration/ingester.configuration.js';
-import { FileCheckpointStore } from '../adapters/file-checkpoint.store.js';
-import { IngestionStatus } from '../../../observability/ingestion-status.service.js';
-import { SimulatorAdapter } from '../adapters/simulator.adapter.js';
-import type {
-  CheckpointStore,
-  EventPublisher,
-  FlightProvider,
-  IngestionState,
-  Publication,
-} from '../domain/ingestion.ports.js';
-import { FlightUpdatesStrategy } from './flight-updates.strategy.js';
 const start = '2026-11-08T12:00:00.000Z',
   runId = '00000000-0000-4000-8000-000000000111';
 const initial = (): IngestionState => ({
@@ -51,9 +51,9 @@ class Publisher implements EventPublisher {
 const engine = (
   store: CheckpointStore,
   publisher: EventPublisher,
-  provider: FlightProvider = new SimulatorAdapter(),
+  provider: FlightProvider = createSimulatorAdapter(),
 ) =>
-  new FlightUpdatesStrategy(
+  createFlightUpdatesStrategy(
     provider,
     store,
     publisher,
@@ -62,7 +62,7 @@ const engine = (
   );
 const signal = () => new AbortController().signal;
 test('six deterministic snapshots retain flight identities, revisions, timing and provenance', async () => {
-  const adapter = new SimulatorAdapter();
+  const adapter = createSimulatorAdapter();
   const snapshots = [];
   for (let sequence = 0; sequence < 6; sequence++) {
     const context = { runId, startAt: start, sequence, observedAt: start };
@@ -166,17 +166,17 @@ test('atomic file checkpoint survives reconstruction and refuses corrupt or mism
       SIMULATION_RUN_ID: runId,
       SIMULATION_START_AT: start,
     });
-    const store = new FileCheckpointStore(config),
+    const store = createFileCheckpointStore(config),
       publisher = new Publisher();
     publisher.fail = true;
     const worker = engine(store, publisher);
     await worker.initialize();
     await assert.rejects(worker.tick(signal()));
-    const restored = await new FileCheckpointStore(config).load();
+    const restored = await createFileCheckpointStore(config).load();
     assert.equal(restored.nextSequence, 0);
     assert.deepEqual(restored.pending, publisher.events[0]);
     await assert.rejects(
-      new FileCheckpointStore({
+      createFileCheckpointStore({
         ...config,
         runId: '00000000-0000-4000-8000-000000000222',
       }).load(),

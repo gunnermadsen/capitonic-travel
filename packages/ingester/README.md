@@ -2,30 +2,28 @@
 
 For deployment inside Codex, use the [Codex Compose entrypoint](../../docs/codex-deployment.md).
 
-A strict TypeScript NestJS worker with separate AeroAPI polling and Firehose streaming data products, plus synthetic flight updates. It publishes full
+A strict TypeScript NestJS worker with one flight-updates product using AeroAPI polling, Firehose streaming, or synthetic data. It publishes full
 snapshots to `flight.updates` and validated, redacted failures to
 `ingestion.rejections`, using its own Kafka mTLS identity and scoped ACLs.
 
 ## Organization
 
 Use the repository's [Ingester Data Products standard](../../agents.md#ingester-data-products).
-The [AeroAPI product](src/products/aeroapi/README.md) is selected by default in Compose and has independent provider validation, polling, state and usage limits.
-The existing `flight_updates` product retains Firehose and synthetic ingestion. `FlightUpdatesModule` composes its
-strategies and adapters; `FlightUpdatesWorker` owns execution and lifecycle.
-The synthetic strategy retains deterministic scenarios. `FirehoseFlightUpdatesStrategy`
-assembles and publishes public-source snapshots; `FirehoseAdapter` owns TLS and
-stream framing. Both live under `products/flight-updates/`.
+`ProductsModule` constructs one `FlightUpdatesService`. That service owns source
+selection, polling/streaming, normalization, retries, checkpointing and shutdown.
+Small parsing and normalization helpers live in the same file. AeroAPI is the
+Compose default; Firehose and the simulator remain available through the existing
+`INGESTER_PRODUCT`/`INGESTER_MODE` settings for compatibility.
 
-- `configuration/`: validated, injected configuration.
-- `kafka/`: producer module with lifecycle ownership and a local client factory.
-- `products/flight-updates/domain/`: provider, publisher and checkpoint ports; event identity.
-- `products/flight-updates/application/`: strategy orchestration and sequential worker loop.
-- `products/flight-updates/adapters/`: simulator, Firehose transport/normalization, product-local checkpoints, and airport reference data.
-- `health/` and `observability/`: local probes, structured logs and runtime metrics.
+- `products/products.module.ts`: registers product services with shared dependencies.
+- `products/flight-updates.service.ts`: the flight-updates product and its three sources.
+- `products/tests/`: behavior, failure-recovery and lifecycle tests; test-only I/O fixtures.
+- `products/reference/`: airport metadata used by Firehose normalization.
+- `configuration/`, `kafka/`, `health/`, `observability/`: shared infrastructure.
 
-`AppModule` composes these modules. Product modules wire their adapters and strategies through Nest providers. Shared contracts come from the contracts workspace public entry point; Kafka
-client construction stays inside this service. There is no inbound HTTP transport, Kafka consumer, or Postgres
-connection in this producer-only service.
+The [AeroAPI source notes](src/products/aeroapi.md) document polling semantics.
+Checkpoint filenames and formats, Kafka topics, event identities and secret names
+are unchanged. Only the selected source starts in each process.
 
 ## Run
 

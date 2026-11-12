@@ -7,8 +7,7 @@ import { tmpdir } from 'node:os';
 import { createKafkaClient } from './kafka/kafka-client.js';
 import { parseEventJson } from '@airline/contracts';
 import { KafkaProducerService } from './kafka/kafka-producer.service.js';
-import { FlightUpdatesStrategy } from './products/flight-updates/application/flight-updates.strategy.js';
-import { FileCheckpointStore } from './products/flight-updates/adapters/file-checkpoint.store.js';
+import { FlightUpdatesService } from './products/flight-updates.service.js';
 import { configuration } from './configuration/ingester.configuration.js';
 import { IngestionStatus } from './observability/ingestion-status.service.js';
 const directory = await mkdtemp(join(tmpdir(), 'airline-ingester-acceptance-'));
@@ -72,7 +71,7 @@ try {
           event.event_type === 'INGESTION_REJECTED' &&
           event.simulation_run_id === runId
         ) {
-          assert.equal(event.reason_code, 'SCHEMA_VALIDATION_FAILED');
+          assert.equal(event.reason_code, 'NORMALIZATION_FAILED');
           assert.equal(message.key?.toString(), event.event_id);
           rejectObserved = true;
         }
@@ -88,32 +87,25 @@ try {
       }
     },
   });
-  const state = new FileCheckpointStore(
+  const status = new IngestionStatus();
+  const service = new FlightUpdatesService(
     configuration({
       INGESTER_STATE_DIR: directory,
       IDENTITY_DIR: resolve('.local/identity/ingester'),
       SIMULATION_RUN_ID: runId,
     }),
-  );
-  const status = new IngestionStatus();
-  const strategy = new FlightUpdatesStrategy(
-    {
-      async acquire() {
-        return Buffer.from('{"invalid":true}');
-      },
-      normalize() {
-        return { invalid: true };
-      },
-    },
-    state,
     producer,
     status,
   );
-  await strategy.initialize();
-  await strategy.tick(new AbortController().signal);
+  service.simSourceAcquire = async () => Buffer.from('{"invalid":true}');
+  service.simSourceNormalize = () => {
+    throw new Error('Invalid test snapshot');
+  };
+  await service.simInitialize();
+  await service.simTick(new AbortController().signal);
   await completed;
   assert.equal(status.rejected, 1);
-  assert.equal((await state.load()).nextSequence, 1);
+  assert.equal((await service.simStoreLoad()).nextSequence, 1);
   console.log(
     JSON.stringify({
       event: 'ingester_kafka_acceptance_passed',
