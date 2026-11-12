@@ -52,7 +52,7 @@ rm common/terraform/confluent-cluster/teardown_override.tf
 
 After cleanup, clear `CONFLUENT_API_KEY` and `CONFLUENT_API_SECRET` in `.env`;
 retain bootstrap Cloud credentials only if still needed. Update `KAFKA_BROKER`
-and the schema IDs in `common/compose/confluent.yaml` before starting against a
+and the schema IDs in `docker-compose.confluent.yml` before starting against a
 reprovisioned cluster. Securely
 remove obsolete saved plan files and protect state backups, which may contain
 revoked secrets. Preserve the current state files for safe subsequent provisioning.

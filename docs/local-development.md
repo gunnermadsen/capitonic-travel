@@ -10,16 +10,12 @@ docker compose -f docker-compose.local.yml up -d
 docker compose -f docker-compose.confluent.yml up -d
 ```
 
-Each entrypoint loads the shared application definitions and the selected deployment
-configuration through native Compose `include`. No npm startup command, second
-`-f` flag or `--env-file` argument is needed. Docker Compose 2.20.3 or later is
-required. The local entrypoint loads `.env` and `.local/secrets/compose.env`; the
-cloud entrypoint loads only `.env`.
-
-`compose.yaml` holds shared application definitions; `common/compose/local.yaml`
-and `common/compose/confluent.yaml` contain deployment-specific settings. Use the
-root `docker-compose.*.yml` files as entrypoints. Local startup includes the database
-migration job automatically; diagnostic tools remain opt-in.
+Each root Compose file is self-contained. `docker-compose.confluent.yml` defines
+only the cloud-connected ingester; `docker-compose.local.yml` defines the ingester
+and local infrastructure. Non-sensitive settings are literal values in each file.
+Only credentials are substituted from root `.env`; local services also mount their
+existing identity and secret files. Local startup includes the database migration
+job automatically; diagnostic tools remain opt-in.
 
 When switching deployments, add `--remove-orphans` to the selected `up -d` command
 to stop and remove containers from the previous mode. Plain `up -d` does not remove
@@ -32,10 +28,10 @@ For cloud mode, fill these exact names in root `.env`:
 - `CONFLUENT_API_SECRET`: its secret.
 
 Root `.env` contains sensitive credentials only. Set non-sensitive application
-settings directly in `compose.yaml`: product, mode, airport, polling interval,
+settings directly in the selected root Compose file: product, mode, airport, polling interval,
 output, and Firehose username/subscription. Set `KAFKA_BROKER` (hostname and port,
 without `https://`), `KAFKA_FLIGHT_SCHEMA_ID`, and `KAFKA_REJECTION_SCHEMA_ID` in
-`common/compose/confluent.yaml` from the corresponding Terraform outputs.
+`docker-compose.confluent.yml` from the corresponding Terraform outputs.
 
 Cloud Compose runs only the ingester. Provision the four topics and their ACLs
 through [Terraform](../common/terraform/confluent/README.md) before starting it.
@@ -53,7 +49,7 @@ the application API key and secret over that encrypted connection.
 The ingester checks Kafka connectivity at startup, but does not create topics.
 Managed Flink, Schema Registry and Tableflow are not provisioned by Compose.
 
-AeroAPI and Firehose selection remains unchanged: default AeroAPI, or edit `compose.yaml` to set
+AeroAPI and Firehose selection remains unchanged: default AeroAPI, or edit `docker-compose.confluent.yml` to set
 `INGESTER_PRODUCT=flight-updates` with `INGESTER_MODE=PUBLIC` for Firehose.
 `FLIGHTAWARE_API_KEY`, `FIREHOSE_USERNAME` and `FIREHOSE_API_KEY` retain their exact
 names. Use `docker compose -f docker-compose.local.yml stop` or `docker compose -f docker-compose.confluent.yml stop` to stop that deployment.
@@ -178,8 +174,8 @@ printf 'RUSTFS_ACCESS_KEY=%s\nRUSTFS_SECRET_KEY=%s\n' \
   "$(openssl rand -hex 12)" "$(openssl rand -hex 24)" > .local/secrets/rustfs.env
 printf 'AWS_ACCESS_KEY_ID=airline-dev-flink-state\nAWS_SECRET_ACCESS_KEY=%s\nAWS_REGION=us-east-1\n' \
   "$(openssl rand -hex 24)" > .local/secrets/flink-s3.env
-printf 'STORE_PASSWORD=%s\nCLUSTER_ID=%s\n' "$(cat .local/secrets/store-password)" \
-  "$(openssl rand -base64 16 | tr '+/' '-_' | tr -d '=\n')" > .local/secrets/compose.env
+# Set STORE_PASSWORD in root .env to the existing .local/secrets/store-password value.
+# CLUSTER_ID is defined explicitly in docker-compose.local.yml; preserve it with broker storage.
 ```
 
 ## Stage only each process's identity material

@@ -27,6 +27,6 @@ Cluster deletion is protected with Terraform `prevent_destroy`. Standard cluster
 do not support the Confluent API deletion-protection setting. Deliberate Terraform
 teardown requires removing `prevent_destroy` before destroy. This workflow does not start
 Compose or create application credentials. After a cluster replacement, update
-`KAFKA_BROKER` in `common/compose/confluent.yaml` from `bootstrap_endpoint` (remove `SASL_SSL://`) and issue
+`KAFKA_BROKER` in `docker-compose.confluent.yml` from `bootstrap_endpoint` (remove `SASL_SSL://`) and issue
 Kafka credentials for the replacement cluster; keys scoped to a deleted cluster
 cannot be reused.

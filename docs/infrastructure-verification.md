@@ -71,7 +71,7 @@ runtime values. Current service memory ceilings total 6 GiB, plus one bounded to
 
 ## Implemented foundation
 
-- `compose.yaml`: persistent Kafka, RustFS, Flink JobManager and
+- `docker-compose.local.yml`: persistent Kafka, RustFS, Flink JobManager and
   TaskManager; isolated streaming/lake networks; loopback-only published ports;
   explicit memory/CPU limits; optional vendor-tool profiles.
 - `common/configs/kafka/server.properties`: single-node KRaft with distinct broker and

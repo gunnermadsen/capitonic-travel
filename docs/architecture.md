@@ -83,7 +83,7 @@ Sources: [PostgreSQL 17 security](https://www.postgresql.org/support/security/17
 
 ### ARM64 evidence and remaining checks
 
-Current ARM64 child manifests are locked in `compose.yaml` and the Dockerfiles:
+Current ARM64 child manifests are locked in `docker-compose.local.yml` and the Dockerfiles:
 
 | Image | ARM64 digest |
 | --- | --- |
